@@ -73,6 +73,41 @@ export interface paths {
         patch: operations["actualizar_usuarios__usuario_id__patch"];
         trace?: never;
     };
+    "/tipo-cambio/hoy": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Hoy */
+        get: operations["hoy_tipo_cambio_hoy_get"];
+        /** Cargar Hoy */
+        put: operations["cargar_hoy_tipo_cambio_hoy_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/resumen": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Resumen */
+        get: operations["resumen_resumen_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/health": {
         parameters: {
             query?: never;
@@ -94,6 +129,12 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        /** AvisoRead */
+        AvisoRead: {
+            tipo: components["schemas"]["TipoAviso"];
+            /** Mensaje */
+            mensaje: string;
+        };
         /** HTTPValidationError */
         HTTPValidationError: {
             /** Detail */
@@ -105,6 +146,16 @@ export interface components {
             email: string;
             /** Password */
             password: string;
+        };
+        /** ResumenRead */
+        ResumenRead: {
+            /**
+             * Fecha
+             * Format: date
+             */
+            fecha: string;
+            /** Avisos */
+            avisos: components["schemas"]["AvisoRead"][];
         };
         /**
          * Rol
@@ -122,6 +173,35 @@ export interface components {
             rol: components["schemas"]["Rol"];
             /** Permisos */
             permisos: string[];
+        };
+        /**
+         * TipoAviso
+         * @description Qué avisa. El front lo usa para saber qué acción ofrecer junto al mensaje.
+         * @enum {string}
+         */
+        TipoAviso: "tc_sin_cargar";
+        /**
+         * TipoCambioHoyRead
+         * @description TC de hoy. `valor_ars` es `null` mientras no se haya cargado: no hay valor por defecto.
+         */
+        TipoCambioHoyRead: {
+            /**
+             * Fecha
+             * Format: date
+             */
+            fecha: string;
+            /** Valor Ars */
+            valor_ars: string | null;
+            /** Cargado Por */
+            cargado_por: string | null;
+        };
+        /**
+         * TipoCambioUpdate
+         * @description Carga o corrige el TC de hoy. Acepta `1180.5` o el formato argentino `"1.180,50"`.
+         */
+        TipoCambioUpdate: {
+            /** Valor Ars */
+            valor_ars: number | string;
         };
         /** TokenRead */
         TokenRead: {
@@ -334,6 +414,79 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    hoy_tipo_cambio_hoy_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TipoCambioHoyRead"];
+                };
+            };
+        };
+    };
+    cargar_hoy_tipo_cambio_hoy_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TipoCambioUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TipoCambioHoyRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    resumen_resumen_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ResumenRead"];
                 };
             };
         };

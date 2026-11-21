@@ -55,6 +55,11 @@ _MENSAJES: dict[str, str] = {
     "greater_than": "Tiene que ser mayor que {gt}.",
     "greater_than_equal": "Tiene que ser {ge} o más.",
     "less_than_equal": "Tiene que ser {le} o menos.",
+    "decimal_parsing": "Tiene que ser un número, por ejemplo 1.180,50.",
+    "decimal_type": "Tiene que ser un número, por ejemplo 1.180,50.",
+    "decimal_max_places": "Puede tener hasta {decimal_places} decimales.",
+    "decimal_max_digits": "Es un número demasiado grande.",
+    "decimal_whole_digits": "Es un número demasiado grande.",
 }
 
 

@@ -11,6 +11,9 @@ class Settings(BaseSettings):
     app_nombre: str = "Iconic API"
     entorno: str = "local"  # local | docker | test
 
+    # "Hoy" es el día en Argentina, no el del servidor (que en Docker corre en UTC).
+    zona_horaria: str = "America/Argentina/Buenos_Aires"
+
     # Base de datos: PostgreSQL en Docker, SQLite si se corre local sin Docker.
     database_url: str = "sqlite:///./iconic.db"
     sql_echo: bool = False

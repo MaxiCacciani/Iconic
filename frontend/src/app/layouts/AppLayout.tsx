@@ -1,6 +1,8 @@
 import { Suspense } from "react"
 import { Outlet } from "react-router"
 
+import { IndicadorTipoCambio } from "@/features/tipo-cambio"
+
 import {
   SidebarInset,
   SidebarProvider,
@@ -18,7 +20,9 @@ export function AppLayout() {
       <SidebarInset>
         <header className="sticky top-0 z-10 flex h-14 shrink-0 items-center gap-2 border-b bg-background px-4">
           <SidebarTrigger className="-ml-1" />
-          {/* Acá va el aviso del TC del día cuando exista `GET /tipo-cambio/hoy`. */}
+          <div className="ml-auto">
+            <IndicadorTipoCambio />
+          </div>
         </header>
         <main className="flex flex-1 flex-col gap-6 p-4 md:p-6">
           <Suspense fallback={<CargandoPagina />}>

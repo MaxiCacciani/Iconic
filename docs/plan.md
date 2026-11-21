@@ -8,8 +8,8 @@ Al cerrar una fase, marcala acá.
 
 - [x] Fase 0 — Base del proyecto
 - [x] Fase 1 — Login, sesión y usuarios
-- [ ] Fase 2 — TC del día y esqueleto de Resumen ← **siguiente**
-- [ ] Fase 3 — Catálogos
+- [x] Fase 2 — TC del día y esqueleto de Resumen
+- [ ] Fase 3 — Catálogos ← **siguiente**
 - [ ] Fase 4 — Productos y stock
 - [ ] Fase 5 — Clientes
 - [ ] Fase 6 — Vendedores y packs
@@ -22,7 +22,7 @@ Al cerrar una fase, marcala acá.
 
 ## Estado actual (21/11/2026)
 
-**Verificado:** `uv run pytest` pasa 30 tests, `ruff` está limpio, y `npm run build`, `typecheck` y `oxlint` pasan sin errores ni avisos. `docker compose up` levanta todo y la app responde en `localhost:8080`.
+**Verificado:** `uv run pytest` pasa 54 tests, `ruff` está limpio, y `npm run build`, `typecheck` y `oxlint` pasan sin errores ni avisos. `docker compose up` levanta todo y la app responde en `localhost:8080`.
 
 **Fase 0:** completa. Además, `schema.sql` ya tiene las 26 tablas del DER y `catalogos.sql` carga los catálogos. Las clases SQLModel solo existen para `usuarios`: las demás se escriben en su fase.
 
@@ -32,6 +32,14 @@ Al cerrar una fase, marcala acá.
 - Errores de validación en español y con el mismo formato por campo (`ErrorDeCampo` en `core/excepciones.py`) para que el front los muestre junto a cada input.
 - Tests: login, token vencido, usuario desactivado, Vendedor con 403 y el ABM completo.
 - En el front: login, guards, menú por permisos y la pantalla de Usuarios (tabla, alta y edición en un `Sheet`, activar o desactivar con confirmación).
+
+**Fase 2:** completa y probada en el navegador con los dos roles.
+- `GET /tipo-cambio/hoy` (todos) y `PUT /tipo-cambio/hoy` (solo admin, carga o corrige el de hoy). Sin TC devuelve `valor_ars: null`: no hay valor por defecto ni se arrastra el de ayer.
+- "Hoy" es el día en Argentina (`ZONA_HORARIA`, por defecto `America/Argentina/Buenos_Aires`, en `core/reloj.py`), no el del servidor en UTC.
+- El Value Object `Pesos` acepta el número JSON o el formato argentino (`1.180,50`).
+- `GET /resumen` devuelve `fecha` y `avisos` (por ahora solo `tc_sin_cargar`). Cada fase suma lo suyo.
+- En el front: feature `tipo-cambio` (aviso con carga para el admin, tarjeta con "Corregir" e indicador en el encabezado) y Resumen. Se refresca cada 2 minutos y al volver a la pestaña, así el cambio llega a las otras computadoras y a la medianoche vuelve a faltar.
+- Token de color `warning` en `index.css` para avisos que no son errores.
 
 **Decisiones confirmadas (21/11/2026):**
 - Los usuarios se **desactivan, no se borran**, porque ventas y reservas guardan `usuario_id`.
