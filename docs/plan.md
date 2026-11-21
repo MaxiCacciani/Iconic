@@ -9,8 +9,8 @@ Al cerrar una fase, marcala acá.
 - [x] Fase 0 — Base del proyecto
 - [x] Fase 1 — Login, sesión y usuarios
 - [x] Fase 2 — TC del día y esqueleto de Resumen
-- [ ] Fase 3 — Catálogos ← **siguiente**
-- [ ] Fase 4 — Productos y stock
+- [x] Fase 3 — Catálogos
+- [ ] Fase 4 — Productos y stock ← **siguiente**
 - [ ] Fase 5 — Clientes
 - [ ] Fase 6 — Vendedores y packs
 - [ ] Fase 7 — Ventas al contado y canje
@@ -22,9 +22,9 @@ Al cerrar una fase, marcala acá.
 
 ## Estado actual (21/11/2026)
 
-**Verificado:** `uv run pytest` pasa 54 tests, `ruff` está limpio, y `npm run build`, `typecheck` y `oxlint` pasan sin errores ni avisos. `docker compose up` levanta todo y la app responde en `localhost:8080`.
+**Verificado:** `uv run pytest` pasa 94 tests, `ruff` está limpio, y `npm run build`, `typecheck` y `oxlint` pasan sin errores ni avisos. `docker compose up` levanta todo y la app responde en `localhost:8080`.
 
-**Fase 0:** completa. Además, `schema.sql` ya tiene las 26 tablas del DER y `catalogos.sql` carga los catálogos. Las clases SQLModel solo existen para `usuarios`: las demás se escriben en su fase.
+**Fase 0:** completa. Además, `schema.sql` ya tiene las 26 tablas del DER (los catálogos iniciales pasaron a la semilla de la Fase 3). Las clases SQLModel solo existen para `usuarios`: las demás se escriben en su fase.
 
 **Fase 1:** completa y probada en el navegador con los dos roles.
 - `POST /auth/login`, `GET /auth/me` con permisos por rol, `Logueado` y `SoloAdmin`, y el script `crear_admin`.
@@ -40,6 +40,17 @@ Al cerrar una fase, marcala acá.
 - `GET /resumen` devuelve `fecha` y `avisos` (por ahora solo `tc_sin_cargar`). Cada fase suma lo suyo.
 - En el front: feature `tipo-cambio` (aviso con carga para el admin, tarjeta con "Corregir" e indicador en el encabezado) y Resumen. Se refresca cada 2 minutos y al volver a la pestaña, así el cambio llega a las otras computadoras y a la medianoche vuelve a faltar.
 - Token de color `warning` en `index.css` para avisos que no son errores.
+
+**Fase 3:** completa y probada en el navegador con los dos roles.
+- Módulo `catalogos` con las 11 tablas. El ABMC es uno solo (`CatalogoService` + `CatalogoRepository`) y cada catálogo se declara en `definiciones.py`. Endpoints: `GET`, `POST /catalogos/{catalogo}`, y `PATCH` y `DELETE /catalogos/{catalogo}/{id}`. Modelos, capacidades y colores aceptan `?categoria_id=`.
+- Todos los logueados leen los catálogos (el Vendedor los necesita para vender, tomar canjes y cargar clientes). Solo el admin los modifica. Nuevo permiso `catalogos`.
+- Los nombres no se repiten sin importar mayúsculas: en toda la tabla o, en modelos, capacidades y colores, dentro de la categoría. La categoría de un modelo, capacidad o color no se cambia.
+- El método de pago predeterminado y el estado de reclamo inicial están siempre en una sola fila: marcar otro le saca la marca al anterior, y no se puede desmarcar ni borrar el marcado.
+- No se borra lo que está en uso: se revisan las claves foráneas de todas las tablas con modelo, así las fases siguientes quedan cubiertas solas, y la base frena el resto.
+- Un tipo de categoría "por cantidad" no puede llevar IMEI, batería ni controles.
+- **Semilla:** `catalogos/semilla.py` reemplaza a `catalogos.sql`. La API la corre al arrancar (en PostgreSQL y en SQLite) y solo carga las tablas vacías. Las reglas no traen modelos, capacidades, colores ni localidades: se cargan desde la pantalla.
+- En el front: feature `catalogos` con una pantalla genérica (lista de catálogos, tabla, alta y edición en un `Sheet`, borrado con confirmación). El catálogo y la categoría elegidos van en la URL. `useCatalogoQuery` se exporta para las fases siguientes.
+- **Pendiente para la Fase 4:** decidir si se bloquea cambiar los datos de un tipo de categoría (o el tipo de una categoría) cuando ya hay productos cargados.
 
 **Decisiones confirmadas (21/11/2026):**
 - Los usuarios se **desactivan, no se borran**, porque ventas y reservas guardan `usuario_id`.

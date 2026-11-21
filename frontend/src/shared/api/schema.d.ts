@@ -4,513 +4,2427 @@
  */
 
 export interface paths {
-    "/auth/login": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Login */
-        post: operations["login_auth_login_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/auth/me": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Me */
-        get: operations["me_auth_me_get"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/usuarios": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Listar */
-        get: operations["listar_usuarios_get"];
-        put?: never;
-        /** Crear */
-        post: operations["crear_usuarios_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/usuarios/{usuario_id}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        /** Actualizar */
-        patch: operations["actualizar_usuarios__usuario_id__patch"];
-        trace?: never;
-    };
-    "/tipo-cambio/hoy": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Hoy */
-        get: operations["hoy_tipo_cambio_hoy_get"];
-        /** Cargar Hoy */
-        put: operations["cargar_hoy_tipo_cambio_hoy_put"];
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/resumen": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Resumen */
-        get: operations["resumen_resumen_get"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/health": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Health */
-        get: operations["health_health_get"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
+  "/auth/login": {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /** Login */
+    post: operations["login_auth_login_post"]
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  "/auth/me": {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /** Me */
+    get: operations["me_auth_me_get"]
+    put?: never
+    post?: never
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  "/usuarios": {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /** Listar */
+    get: operations["listar_usuarios_get"]
+    put?: never
+    /** Crear */
+    post: operations["crear_usuarios_post"]
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  "/usuarios/{usuario_id}": {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    post?: never
+    delete?: never
+    options?: never
+    head?: never
+    /** Actualizar */
+    patch: operations["actualizar_usuarios__usuario_id__patch"]
+    trace?: never
+  }
+  "/catalogos/tipos-categoria": {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /** Listar */
+    get: operations["listar_tipos_categoria"]
+    put?: never
+    /** Crear */
+    post: operations["crear_tipos_categoria"]
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  "/catalogos/tipos-categoria/{item_id}": {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    post?: never
+    /** Eliminar */
+    delete: operations["eliminar_tipos_categoria"]
+    options?: never
+    head?: never
+    /** Actualizar */
+    patch: operations["actualizar_tipos_categoria"]
+    trace?: never
+  }
+  "/catalogos/categorias": {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /** Listar */
+    get: operations["listar_categorias"]
+    put?: never
+    /** Crear */
+    post: operations["crear_categorias"]
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  "/catalogos/categorias/{item_id}": {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    post?: never
+    /** Eliminar */
+    delete: operations["eliminar_categorias"]
+    options?: never
+    head?: never
+    /** Actualizar */
+    patch: operations["actualizar_categorias"]
+    trace?: never
+  }
+  "/catalogos/modelos": {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /** Listar */
+    get: operations["listar_modelos"]
+    put?: never
+    /** Crear */
+    post: operations["crear_modelos"]
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  "/catalogos/modelos/{item_id}": {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    post?: never
+    /** Eliminar */
+    delete: operations["eliminar_modelos"]
+    options?: never
+    head?: never
+    /** Actualizar */
+    patch: operations["actualizar_modelos"]
+    trace?: never
+  }
+  "/catalogos/capacidades": {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /** Listar */
+    get: operations["listar_capacidades"]
+    put?: never
+    /** Crear */
+    post: operations["crear_capacidades"]
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  "/catalogos/capacidades/{item_id}": {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    post?: never
+    /** Eliminar */
+    delete: operations["eliminar_capacidades"]
+    options?: never
+    head?: never
+    /** Actualizar */
+    patch: operations["actualizar_capacidades"]
+    trace?: never
+  }
+  "/catalogos/colores": {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /** Listar */
+    get: operations["listar_colores"]
+    put?: never
+    /** Crear */
+    post: operations["crear_colores"]
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  "/catalogos/colores/{item_id}": {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    post?: never
+    /** Eliminar */
+    delete: operations["eliminar_colores"]
+    options?: never
+    head?: never
+    /** Actualizar */
+    patch: operations["actualizar_colores"]
+    trace?: never
+  }
+  "/catalogos/proveedores": {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /** Listar */
+    get: operations["listar_proveedores"]
+    put?: never
+    /** Crear */
+    post: operations["crear_proveedores"]
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  "/catalogos/proveedores/{item_id}": {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    post?: never
+    /** Eliminar */
+    delete: operations["eliminar_proveedores"]
+    options?: never
+    head?: never
+    /** Actualizar */
+    patch: operations["actualizar_proveedores"]
+    trace?: never
+  }
+  "/catalogos/defectos": {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /** Listar */
+    get: operations["listar_defectos"]
+    put?: never
+    /** Crear */
+    post: operations["crear_defectos"]
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  "/catalogos/defectos/{item_id}": {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    post?: never
+    /** Eliminar */
+    delete: operations["eliminar_defectos"]
+    options?: never
+    head?: never
+    /** Actualizar */
+    patch: operations["actualizar_defectos"]
+    trace?: never
+  }
+  "/catalogos/localidades": {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /** Listar */
+    get: operations["listar_localidades"]
+    put?: never
+    /** Crear */
+    post: operations["crear_localidades"]
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  "/catalogos/localidades/{item_id}": {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    post?: never
+    /** Eliminar */
+    delete: operations["eliminar_localidades"]
+    options?: never
+    head?: never
+    /** Actualizar */
+    patch: operations["actualizar_localidades"]
+    trace?: never
+  }
+  "/catalogos/diagnosticos": {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /** Listar */
+    get: operations["listar_diagnosticos"]
+    put?: never
+    /** Crear */
+    post: operations["crear_diagnosticos"]
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  "/catalogos/diagnosticos/{item_id}": {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    post?: never
+    /** Eliminar */
+    delete: operations["eliminar_diagnosticos"]
+    options?: never
+    head?: never
+    /** Actualizar */
+    patch: operations["actualizar_diagnosticos"]
+    trace?: never
+  }
+  "/catalogos/estados-reclamo": {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /** Listar */
+    get: operations["listar_estados_reclamo"]
+    put?: never
+    /** Crear */
+    post: operations["crear_estados_reclamo"]
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  "/catalogos/estados-reclamo/{item_id}": {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    post?: never
+    /** Eliminar */
+    delete: operations["eliminar_estados_reclamo"]
+    options?: never
+    head?: never
+    /** Actualizar */
+    patch: operations["actualizar_estados_reclamo"]
+    trace?: never
+  }
+  "/catalogos/metodos-pago": {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /** Listar */
+    get: operations["listar_metodos_pago"]
+    put?: never
+    /** Crear */
+    post: operations["crear_metodos_pago"]
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  "/catalogos/metodos-pago/{item_id}": {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    post?: never
+    /** Eliminar */
+    delete: operations["eliminar_metodos_pago"]
+    options?: never
+    head?: never
+    /** Actualizar */
+    patch: operations["actualizar_metodos_pago"]
+    trace?: never
+  }
+  "/tipo-cambio/hoy": {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /** Hoy */
+    get: operations["hoy_tipo_cambio_hoy_get"]
+    /** Cargar Hoy */
+    put: operations["cargar_hoy_tipo_cambio_hoy_put"]
+    post?: never
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  "/resumen": {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /** Resumen */
+    get: operations["resumen_resumen_get"]
+    put?: never
+    post?: never
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  "/health": {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /** Health */
+    get: operations["health_health_get"]
+    put?: never
+    post?: never
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
 }
-export type webhooks = Record<string, never>;
+export type webhooks = Record<string, never>
 export interface components {
-    schemas: {
-        /** AvisoRead */
-        AvisoRead: {
-            tipo: components["schemas"]["TipoAviso"];
-            /** Mensaje */
-            mensaje: string;
-        };
-        /** HTTPValidationError */
-        HTTPValidationError: {
-            /** Detail */
-            detail?: components["schemas"]["ValidationError"][];
-        };
-        /** LoginCreate */
-        LoginCreate: {
-            /** Email */
-            email: string;
-            /** Password */
-            password: string;
-        };
-        /** ResumenRead */
-        ResumenRead: {
-            /**
-             * Fecha
-             * Format: date
-             */
-            fecha: string;
-            /** Avisos */
-            avisos: components["schemas"]["AvisoRead"][];
-        };
-        /**
-         * Rol
-         * @enum {string}
-         */
-        Rol: "admin" | "vendedor";
-        /** SesionRead */
-        SesionRead: {
-            /** Id */
-            id: number;
-            /** Nombre */
-            nombre: string;
-            /** Email */
-            email: string;
-            rol: components["schemas"]["Rol"];
-            /** Permisos */
-            permisos: string[];
-        };
-        /**
-         * TipoAviso
-         * @description Qué avisa. El front lo usa para saber qué acción ofrecer junto al mensaje.
-         * @enum {string}
-         */
-        TipoAviso: "tc_sin_cargar";
-        /**
-         * TipoCambioHoyRead
-         * @description TC de hoy. `valor_ars` es `null` mientras no se haya cargado: no hay valor por defecto.
-         */
-        TipoCambioHoyRead: {
-            /**
-             * Fecha
-             * Format: date
-             */
-            fecha: string;
-            /** Valor Ars */
-            valor_ars: string | null;
-            /** Cargado Por */
-            cargado_por: string | null;
-        };
-        /**
-         * TipoCambioUpdate
-         * @description Carga o corrige el TC de hoy. Acepta `1180.5` o el formato argentino `"1.180,50"`.
-         */
-        TipoCambioUpdate: {
-            /** Valor Ars */
-            valor_ars: number | string;
-        };
-        /** TokenRead */
-        TokenRead: {
-            /** Access Token */
-            access_token: string;
-            /**
-             * Token Type
-             * @default bearer
-             */
-            token_type: string;
-        };
-        /** UsuarioCreate */
-        UsuarioCreate: {
-            /** Nombre */
-            nombre: string;
-            /** Email */
-            email: string;
-            /** Password */
-            password: string;
-            rol: components["schemas"]["Rol"];
-        };
-        /** UsuarioRead */
-        UsuarioRead: {
-            /** Id */
-            id: number;
-            /** Nombre */
-            nombre: string;
-            /** Email */
-            email: string;
-            rol: components["schemas"]["Rol"];
-            /** Activo */
-            activo: boolean;
-            /**
-             * Creado En
-             * Format: date-time
-             */
-            creado_en: string;
-        };
-        /**
-         * UsuarioUpdate
-         * @description Edición parcial. `password` blanquea la contraseña; `activo` activa o desactiva.
-         */
-        UsuarioUpdate: {
-            /** Nombre */
-            nombre?: string | null;
-            /** Email */
-            email?: string | null;
-            rol?: components["schemas"]["Rol"] | null;
-            /** Activo */
-            activo?: boolean | null;
-            /** Password */
-            password?: string | null;
-        };
-        /** ValidationError */
-        ValidationError: {
-            /** Location */
-            loc: (string | number)[];
-            /** Message */
-            msg: string;
-            /** Error Type */
-            type: string;
-            /** Input */
-            input?: unknown;
-            /** Context */
-            ctx?: Record<string, never>;
-        };
-    };
-    responses: never;
-    parameters: never;
-    requestBodies: never;
-    headers: never;
-    pathItems: never;
+  schemas: {
+    /** AvisoRead */
+    AvisoRead: {
+      tipo: components["schemas"]["TipoAviso"]
+      /** Mensaje */
+      mensaje: string
+    }
+    /** CategoriaCreate */
+    CategoriaCreate: {
+      /** Nombre */
+      nombre: string
+      /** Tipo Categoria Id */
+      tipo_categoria_id: number
+    }
+    /** CategoriaRead */
+    CategoriaRead: {
+      /** Id */
+      id: number
+      /** Nombre */
+      nombre: string
+      /** Tipo Categoria Id */
+      tipo_categoria_id: number
+    }
+    /** CategoriaUpdate */
+    CategoriaUpdate: {
+      /** Nombre */
+      nombre?: string | null
+      /** Tipo Categoria Id */
+      tipo_categoria_id?: number | null
+    }
+    /** DefectoCreate */
+    DefectoCreate: {
+      /** Descripcion */
+      descripcion: string
+      /**
+       * Es Comun
+       * @default true
+       */
+      es_comun: boolean
+    }
+    /** DefectoRead */
+    DefectoRead: {
+      /** Id */
+      id: number
+      /** Descripcion */
+      descripcion: string
+      /** Es Comun */
+      es_comun: boolean
+    }
+    /** DefectoUpdate */
+    DefectoUpdate: {
+      /** Descripcion */
+      descripcion?: string | null
+      /** Es Comun */
+      es_comun?: boolean | null
+    }
+    /** EstadoReclamoCreate */
+    EstadoReclamoCreate: {
+      /** Nombre */
+      nombre: string
+      /**
+       * Es Inicial
+       * @default false
+       */
+      es_inicial: boolean
+    }
+    /** EstadoReclamoRead */
+    EstadoReclamoRead: {
+      /** Id */
+      id: number
+      /** Nombre */
+      nombre: string
+      /** Es Inicial */
+      es_inicial: boolean
+    }
+    /** EstadoReclamoUpdate */
+    EstadoReclamoUpdate: {
+      /** Nombre */
+      nombre?: string | null
+      /** Es Inicial */
+      es_inicial?: boolean | null
+    }
+    /** HTTPValidationError */
+    HTTPValidationError: {
+      /** Detail */
+      detail?: components["schemas"]["ValidationError"][]
+    }
+    /** ItemCatalogoCreate */
+    ItemCatalogoCreate: {
+      /** Nombre */
+      nombre: string
+    }
+    /** ItemCatalogoRead */
+    ItemCatalogoRead: {
+      /** Id */
+      id: number
+      /** Nombre */
+      nombre: string
+    }
+    /** ItemCatalogoUpdate */
+    ItemCatalogoUpdate: {
+      /** Nombre */
+      nombre?: string | null
+    }
+    /** ItemDeCategoriaCreate */
+    ItemDeCategoriaCreate: {
+      /** Categoria Id */
+      categoria_id: number
+      /** Nombre */
+      nombre: string
+    }
+    /** ItemDeCategoriaRead */
+    ItemDeCategoriaRead: {
+      /** Id */
+      id: number
+      /** Categoria Id */
+      categoria_id: number
+      /** Nombre */
+      nombre: string
+    }
+    /**
+     * ItemDeCategoriaUpdate
+     * @description La categoría no se cambia: el ítem se borra y se crea en la otra.
+     */
+    ItemDeCategoriaUpdate: {
+      /** Nombre */
+      nombre?: string | null
+    }
+    /** LoginCreate */
+    LoginCreate: {
+      /** Email */
+      email: string
+      /** Password */
+      password: string
+    }
+    /** MetodoPagoCreate */
+    MetodoPagoCreate: {
+      /** Nombre */
+      nombre: string
+      /**
+       * Predeterminado
+       * @default false
+       */
+      predeterminado: boolean
+    }
+    /** MetodoPagoRead */
+    MetodoPagoRead: {
+      /** Id */
+      id: number
+      /** Nombre */
+      nombre: string
+      /** Predeterminado */
+      predeterminado: boolean
+    }
+    /** MetodoPagoUpdate */
+    MetodoPagoUpdate: {
+      /** Nombre */
+      nombre?: string | null
+      /** Predeterminado */
+      predeterminado?: boolean | null
+    }
+    /** ResumenRead */
+    ResumenRead: {
+      /**
+       * Fecha
+       * Format: date
+       */
+      fecha: string
+      /** Avisos */
+      avisos: components["schemas"]["AvisoRead"][]
+    }
+    /**
+     * Rol
+     * @enum {string}
+     */
+    Rol: "admin" | "vendedor"
+    /** SesionRead */
+    SesionRead: {
+      /** Id */
+      id: number
+      /** Nombre */
+      nombre: string
+      /** Email */
+      email: string
+      rol: components["schemas"]["Rol"]
+      /** Permisos */
+      permisos: string[]
+    }
+    /**
+     * TipoAviso
+     * @description Qué avisa. El front lo usa para saber qué acción ofrecer junto al mensaje.
+     * @enum {string}
+     */
+    TipoAviso: "tc_sin_cargar"
+    /**
+     * TipoCambioHoyRead
+     * @description TC de hoy. `valor_ars` es `null` mientras no se haya cargado: no hay valor por defecto.
+     */
+    TipoCambioHoyRead: {
+      /**
+       * Fecha
+       * Format: date
+       */
+      fecha: string
+      /** Valor Ars */
+      valor_ars: string | null
+      /** Cargado Por */
+      cargado_por: string | null
+    }
+    /**
+     * TipoCambioUpdate
+     * @description Carga o corrige el TC de hoy. Acepta `1180.5` o el formato argentino `"1.180,50"`.
+     */
+    TipoCambioUpdate: {
+      /** Valor Ars */
+      valor_ars: number | string
+    }
+    /** TipoCategoriaCreate */
+    TipoCategoriaCreate: {
+      /** Nombre */
+      nombre: string
+      /**
+       * Usa Imei
+       * @default false
+       */
+      usa_imei: boolean
+      /**
+       * Usa Bateria
+       * @default false
+       */
+      usa_bateria: boolean
+      /**
+       * Usa Controles
+       * @default false
+       */
+      usa_controles: boolean
+      /**
+       * Por Cantidad
+       * @default false
+       */
+      por_cantidad: boolean
+    }
+    /** TipoCategoriaRead */
+    TipoCategoriaRead: {
+      /** Id */
+      id: number
+      /** Nombre */
+      nombre: string
+      /** Usa Imei */
+      usa_imei: boolean
+      /** Usa Bateria */
+      usa_bateria: boolean
+      /** Usa Controles */
+      usa_controles: boolean
+      /** Por Cantidad */
+      por_cantidad: boolean
+    }
+    /** TipoCategoriaUpdate */
+    TipoCategoriaUpdate: {
+      /** Nombre */
+      nombre?: string | null
+      /** Usa Imei */
+      usa_imei?: boolean | null
+      /** Usa Bateria */
+      usa_bateria?: boolean | null
+      /** Usa Controles */
+      usa_controles?: boolean | null
+      /** Por Cantidad */
+      por_cantidad?: boolean | null
+    }
+    /** TokenRead */
+    TokenRead: {
+      /** Access Token */
+      access_token: string
+      /**
+       * Token Type
+       * @default bearer
+       */
+      token_type: string
+    }
+    /** UsuarioCreate */
+    UsuarioCreate: {
+      /** Nombre */
+      nombre: string
+      /** Email */
+      email: string
+      /** Password */
+      password: string
+      rol: components["schemas"]["Rol"]
+    }
+    /** UsuarioRead */
+    UsuarioRead: {
+      /** Id */
+      id: number
+      /** Nombre */
+      nombre: string
+      /** Email */
+      email: string
+      rol: components["schemas"]["Rol"]
+      /** Activo */
+      activo: boolean
+      /**
+       * Creado En
+       * Format: date-time
+       */
+      creado_en: string
+    }
+    /**
+     * UsuarioUpdate
+     * @description Edición parcial. `password` blanquea la contraseña; `activo` activa o desactiva.
+     */
+    UsuarioUpdate: {
+      /** Nombre */
+      nombre?: string | null
+      /** Email */
+      email?: string | null
+      rol?: components["schemas"]["Rol"] | null
+      /** Activo */
+      activo?: boolean | null
+      /** Password */
+      password?: string | null
+    }
+    /** ValidationError */
+    ValidationError: {
+      /** Location */
+      loc: (string | number)[]
+      /** Message */
+      msg: string
+      /** Error Type */
+      type: string
+      /** Input */
+      input?: unknown
+      /** Context */
+      ctx?: Record<string, never>
+    }
+  }
+  responses: never
+  parameters: never
+  requestBodies: never
+  headers: never
+  pathItems: never
 }
-export type $defs = Record<string, never>;
+export type $defs = Record<string, never>
 export interface operations {
-    login_auth_login_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["LoginCreate"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["TokenRead"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    me_auth_me_get: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["SesionRead"];
-                };
-            };
-        };
-    };
-    listar_usuarios_get: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["UsuarioRead"][];
-                };
-            };
-        };
-    };
-    crear_usuarios_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["UsuarioCreate"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            201: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["UsuarioRead"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    actualizar_usuarios__usuario_id__patch: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                usuario_id: number;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["UsuarioUpdate"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["UsuarioRead"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    hoy_tipo_cambio_hoy_get: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["TipoCambioHoyRead"];
-                };
-            };
-        };
-    };
-    cargar_hoy_tipo_cambio_hoy_put: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["TipoCambioUpdate"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["TipoCambioHoyRead"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    resumen_resumen_get: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ResumenRead"];
-                };
-            };
-        };
-    };
-    health_health_get: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        [key: string]: string;
-                    };
-                };
-            };
-        };
-    };
+  login_auth_login_post: {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["LoginCreate"]
+      }
+    }
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          "application/json": components["schemas"]["TokenRead"]
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"]
+        }
+      }
+    }
+  }
+  me_auth_me_get: {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          "application/json": components["schemas"]["SesionRead"]
+        }
+      }
+    }
+  }
+  listar_usuarios_get: {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          "application/json": components["schemas"]["UsuarioRead"][]
+        }
+      }
+    }
+  }
+  crear_usuarios_post: {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["UsuarioCreate"]
+      }
+    }
+    responses: {
+      /** @description Successful Response */
+      201: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          "application/json": components["schemas"]["UsuarioRead"]
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"]
+        }
+      }
+    }
+  }
+  actualizar_usuarios__usuario_id__patch: {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        usuario_id: number
+      }
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["UsuarioUpdate"]
+      }
+    }
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          "application/json": components["schemas"]["UsuarioRead"]
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"]
+        }
+      }
+    }
+  }
+  listar_tipos_categoria: {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          "application/json": components["schemas"]["TipoCategoriaRead"][]
+        }
+      }
+    }
+  }
+  crear_tipos_categoria: {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["TipoCategoriaCreate"]
+      }
+    }
+    responses: {
+      /** @description Successful Response */
+      201: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          "application/json": components["schemas"]["TipoCategoriaRead"]
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"]
+        }
+      }
+    }
+  }
+  eliminar_tipos_categoria: {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        item_id: number
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      204: {
+        headers: {
+          [name: string]: unknown
+        }
+        content?: never
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"]
+        }
+      }
+    }
+  }
+  actualizar_tipos_categoria: {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        item_id: number
+      }
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["TipoCategoriaUpdate"]
+      }
+    }
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          "application/json": components["schemas"]["TipoCategoriaRead"]
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"]
+        }
+      }
+    }
+  }
+  listar_categorias: {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          "application/json": components["schemas"]["CategoriaRead"][]
+        }
+      }
+    }
+  }
+  crear_categorias: {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["CategoriaCreate"]
+      }
+    }
+    responses: {
+      /** @description Successful Response */
+      201: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          "application/json": components["schemas"]["CategoriaRead"]
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"]
+        }
+      }
+    }
+  }
+  eliminar_categorias: {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        item_id: number
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      204: {
+        headers: {
+          [name: string]: unknown
+        }
+        content?: never
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"]
+        }
+      }
+    }
+  }
+  actualizar_categorias: {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        item_id: number
+      }
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["CategoriaUpdate"]
+      }
+    }
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          "application/json": components["schemas"]["CategoriaRead"]
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"]
+        }
+      }
+    }
+  }
+  listar_modelos: {
+    parameters: {
+      query?: {
+        /** @description Solo de esa categoría */
+        categoria_id?: number | null
+      }
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          "application/json": components["schemas"]["ItemDeCategoriaRead"][]
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"]
+        }
+      }
+    }
+  }
+  crear_modelos: {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["ItemDeCategoriaCreate"]
+      }
+    }
+    responses: {
+      /** @description Successful Response */
+      201: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          "application/json": components["schemas"]["ItemDeCategoriaRead"]
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"]
+        }
+      }
+    }
+  }
+  eliminar_modelos: {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        item_id: number
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      204: {
+        headers: {
+          [name: string]: unknown
+        }
+        content?: never
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"]
+        }
+      }
+    }
+  }
+  actualizar_modelos: {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        item_id: number
+      }
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["ItemDeCategoriaUpdate"]
+      }
+    }
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          "application/json": components["schemas"]["ItemDeCategoriaRead"]
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"]
+        }
+      }
+    }
+  }
+  listar_capacidades: {
+    parameters: {
+      query?: {
+        /** @description Solo de esa categoría */
+        categoria_id?: number | null
+      }
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          "application/json": components["schemas"]["ItemDeCategoriaRead"][]
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"]
+        }
+      }
+    }
+  }
+  crear_capacidades: {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["ItemDeCategoriaCreate"]
+      }
+    }
+    responses: {
+      /** @description Successful Response */
+      201: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          "application/json": components["schemas"]["ItemDeCategoriaRead"]
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"]
+        }
+      }
+    }
+  }
+  eliminar_capacidades: {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        item_id: number
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      204: {
+        headers: {
+          [name: string]: unknown
+        }
+        content?: never
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"]
+        }
+      }
+    }
+  }
+  actualizar_capacidades: {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        item_id: number
+      }
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["ItemDeCategoriaUpdate"]
+      }
+    }
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          "application/json": components["schemas"]["ItemDeCategoriaRead"]
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"]
+        }
+      }
+    }
+  }
+  listar_colores: {
+    parameters: {
+      query?: {
+        /** @description Solo de esa categoría */
+        categoria_id?: number | null
+      }
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          "application/json": components["schemas"]["ItemDeCategoriaRead"][]
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"]
+        }
+      }
+    }
+  }
+  crear_colores: {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["ItemDeCategoriaCreate"]
+      }
+    }
+    responses: {
+      /** @description Successful Response */
+      201: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          "application/json": components["schemas"]["ItemDeCategoriaRead"]
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"]
+        }
+      }
+    }
+  }
+  eliminar_colores: {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        item_id: number
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      204: {
+        headers: {
+          [name: string]: unknown
+        }
+        content?: never
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"]
+        }
+      }
+    }
+  }
+  actualizar_colores: {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        item_id: number
+      }
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["ItemDeCategoriaUpdate"]
+      }
+    }
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          "application/json": components["schemas"]["ItemDeCategoriaRead"]
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"]
+        }
+      }
+    }
+  }
+  listar_proveedores: {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          "application/json": components["schemas"]["ItemCatalogoRead"][]
+        }
+      }
+    }
+  }
+  crear_proveedores: {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["ItemCatalogoCreate"]
+      }
+    }
+    responses: {
+      /** @description Successful Response */
+      201: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          "application/json": components["schemas"]["ItemCatalogoRead"]
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"]
+        }
+      }
+    }
+  }
+  eliminar_proveedores: {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        item_id: number
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      204: {
+        headers: {
+          [name: string]: unknown
+        }
+        content?: never
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"]
+        }
+      }
+    }
+  }
+  actualizar_proveedores: {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        item_id: number
+      }
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["ItemCatalogoUpdate"]
+      }
+    }
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          "application/json": components["schemas"]["ItemCatalogoRead"]
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"]
+        }
+      }
+    }
+  }
+  listar_defectos: {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          "application/json": components["schemas"]["DefectoRead"][]
+        }
+      }
+    }
+  }
+  crear_defectos: {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["DefectoCreate"]
+      }
+    }
+    responses: {
+      /** @description Successful Response */
+      201: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          "application/json": components["schemas"]["DefectoRead"]
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"]
+        }
+      }
+    }
+  }
+  eliminar_defectos: {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        item_id: number
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      204: {
+        headers: {
+          [name: string]: unknown
+        }
+        content?: never
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"]
+        }
+      }
+    }
+  }
+  actualizar_defectos: {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        item_id: number
+      }
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["DefectoUpdate"]
+      }
+    }
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          "application/json": components["schemas"]["DefectoRead"]
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"]
+        }
+      }
+    }
+  }
+  listar_localidades: {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          "application/json": components["schemas"]["ItemCatalogoRead"][]
+        }
+      }
+    }
+  }
+  crear_localidades: {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["ItemCatalogoCreate"]
+      }
+    }
+    responses: {
+      /** @description Successful Response */
+      201: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          "application/json": components["schemas"]["ItemCatalogoRead"]
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"]
+        }
+      }
+    }
+  }
+  eliminar_localidades: {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        item_id: number
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      204: {
+        headers: {
+          [name: string]: unknown
+        }
+        content?: never
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"]
+        }
+      }
+    }
+  }
+  actualizar_localidades: {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        item_id: number
+      }
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["ItemCatalogoUpdate"]
+      }
+    }
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          "application/json": components["schemas"]["ItemCatalogoRead"]
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"]
+        }
+      }
+    }
+  }
+  listar_diagnosticos: {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          "application/json": components["schemas"]["ItemCatalogoRead"][]
+        }
+      }
+    }
+  }
+  crear_diagnosticos: {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["ItemCatalogoCreate"]
+      }
+    }
+    responses: {
+      /** @description Successful Response */
+      201: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          "application/json": components["schemas"]["ItemCatalogoRead"]
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"]
+        }
+      }
+    }
+  }
+  eliminar_diagnosticos: {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        item_id: number
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      204: {
+        headers: {
+          [name: string]: unknown
+        }
+        content?: never
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"]
+        }
+      }
+    }
+  }
+  actualizar_diagnosticos: {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        item_id: number
+      }
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["ItemCatalogoUpdate"]
+      }
+    }
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          "application/json": components["schemas"]["ItemCatalogoRead"]
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"]
+        }
+      }
+    }
+  }
+  listar_estados_reclamo: {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          "application/json": components["schemas"]["EstadoReclamoRead"][]
+        }
+      }
+    }
+  }
+  crear_estados_reclamo: {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["EstadoReclamoCreate"]
+      }
+    }
+    responses: {
+      /** @description Successful Response */
+      201: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          "application/json": components["schemas"]["EstadoReclamoRead"]
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"]
+        }
+      }
+    }
+  }
+  eliminar_estados_reclamo: {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        item_id: number
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      204: {
+        headers: {
+          [name: string]: unknown
+        }
+        content?: never
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"]
+        }
+      }
+    }
+  }
+  actualizar_estados_reclamo: {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        item_id: number
+      }
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["EstadoReclamoUpdate"]
+      }
+    }
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          "application/json": components["schemas"]["EstadoReclamoRead"]
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"]
+        }
+      }
+    }
+  }
+  listar_metodos_pago: {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          "application/json": components["schemas"]["MetodoPagoRead"][]
+        }
+      }
+    }
+  }
+  crear_metodos_pago: {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["MetodoPagoCreate"]
+      }
+    }
+    responses: {
+      /** @description Successful Response */
+      201: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          "application/json": components["schemas"]["MetodoPagoRead"]
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"]
+        }
+      }
+    }
+  }
+  eliminar_metodos_pago: {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        item_id: number
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      204: {
+        headers: {
+          [name: string]: unknown
+        }
+        content?: never
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"]
+        }
+      }
+    }
+  }
+  actualizar_metodos_pago: {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        item_id: number
+      }
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["MetodoPagoUpdate"]
+      }
+    }
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          "application/json": components["schemas"]["MetodoPagoRead"]
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"]
+        }
+      }
+    }
+  }
+  hoy_tipo_cambio_hoy_get: {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          "application/json": components["schemas"]["TipoCambioHoyRead"]
+        }
+      }
+    }
+  }
+  cargar_hoy_tipo_cambio_hoy_put: {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["TipoCambioUpdate"]
+      }
+    }
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          "application/json": components["schemas"]["TipoCambioHoyRead"]
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"]
+        }
+      }
+    }
+  }
+  resumen_resumen_get: {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          "application/json": components["schemas"]["ResumenRead"]
+        }
+      }
+    }
+  }
+  health_health_get: {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          "application/json": {
+            [key: string]: string
+          }
+        }
+      }
+    }
+  }
 }

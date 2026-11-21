@@ -1,11 +1,14 @@
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
+from sqlmodel import Session
 
 from app.core.config import get_settings
-from app.core.db import crear_tablas_sqlite
+from app.core.db import crear_tablas_sqlite, engine
 from app.core.excepciones import registrar_manejadores
 from app.modules.auth.router import router as auth
+from app.modules.catalogos.router import router as catalogos
+from app.modules.catalogos.semilla import sembrar_catalogos
 from app.modules.clientes.router import router as clientes
 from app.modules.cobros.router import router as cobros
 from app.modules.garantias.router import router as garantias
@@ -22,6 +25,7 @@ from app.modules.ventas.router import router as ventas
 ROUTERS = [
     auth,
     usuarios,
+    catalogos,
     productos,
     clientes,
     ventas,
@@ -39,8 +43,11 @@ ROUTERS = [
 @asynccontextmanager
 async def lifespan(_: FastAPI):
     settings = get_settings()
-    if settings.es_sqlite and settings.entorno != "test":
-        crear_tablas_sqlite()
+    if settings.entorno != "test":
+        if settings.es_sqlite:
+            crear_tablas_sqlite()
+        with Session(engine) as session:
+            sembrar_catalogos(session)
     yield
 
 

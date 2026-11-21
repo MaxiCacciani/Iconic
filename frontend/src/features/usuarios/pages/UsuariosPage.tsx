@@ -96,7 +96,9 @@ export function UsuariosPage() {
           idPropio={sesion?.id}
           onEditar={abrirEdicion}
           onCambiarActivo={(usuario) =>
-            usuario.activo ? setADesactivar(usuario) : cambiarActivo(usuario, true)
+            usuario.activo
+              ? setADesactivar(usuario)
+              : cambiarActivo(usuario, true)
           }
         />
       )}
