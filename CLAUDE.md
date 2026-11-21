@@ -11,3 +11,9 @@ Las reglas de negocio del sistema están en el archivo importado abajo. Respetal
 El stack tecnológico y la arquitectura están en el archivo importado abajo. Seguí esas tecnologías, la estructura de módulos y las capas que define.
 
 @../stack.md
+
+## Frontend
+
+El front vive en `frontend/` y su UI se arma **siempre con shadcn/ui** (MCP `shadcn` en `.mcp.json`). Las reglas de UI están en el archivo importado abajo.
+
+@frontend/CLAUDE.md
