@@ -17,3 +17,9 @@ El stack tecnológico y la arquitectura están en el archivo importado abajo. Se
 El front vive en `frontend/` y su UI se arma **siempre con shadcn/ui** (MCP `shadcn` en `.mcp.json`). Las reglas de UI están en el archivo importado abajo.
 
 @frontend/CLAUDE.md
+
+## Plan de desarrollo
+
+El desarrollo sigue el plan importado abajo: fases verticales, backend y frontend juntos, y cada fase probada de punta a punta antes de pasar a la siguiente. Trabajá en la primera fase sin marcar, seguí el ciclo de trabajo que define el plan y, al cerrar una fase, marcala en "Avance".
+
+@docs/plan.md
