@@ -12,3 +12,6 @@ __pycache__/
 
 # Sistema
 .DS_Store
+
+# Ajustes personales de Claude Code
+.claude/settings.local.json

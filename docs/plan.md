@@ -7,8 +7,8 @@ Cada fase es un corte vertical: se arma el backend, la pantalla que lo usa y se 
 Al cerrar una fase, marcala acá.
 
 - [x] Fase 0 — Base del proyecto
-- [ ] Fase 1 — Login, sesión y usuarios ← **en curso** (ver "Estado actual")
-- [ ] Fase 2 — TC del día y esqueleto de Resumen
+- [x] Fase 1 — Login, sesión y usuarios
+- [ ] Fase 2 — TC del día y esqueleto de Resumen ← **siguiente**
 - [ ] Fase 3 — Catálogos
 - [ ] Fase 4 — Productos y stock
 - [ ] Fase 5 — Clientes
@@ -22,33 +22,20 @@ Al cerrar una fase, marcala acá.
 
 ## Estado actual (21/11/2026)
 
-**Verificado:** `uv run pytest` pasa 15 tests, `ruff` está limpio, y `npm run build` y `oxlint` compilan sin errores. Falta probar `docker compose up` y el login en el navegador.
+**Verificado:** `uv run pytest` pasa 30 tests, `ruff` está limpio, y `npm run build`, `typecheck` y `oxlint` pasan sin errores ni avisos. `docker compose up` levanta todo y la app responde en `localhost:8080`.
 
 **Fase 0:** completa. Además, `schema.sql` ya tiene las 26 tablas del DER y `catalogos.sql` carga los catálogos. Las clases SQLModel solo existen para `usuarios`: las demás se escriben en su fase.
 
-**Fase 1, lo hecho:**
+**Fase 1:** completa y probada en el navegador con los dos roles.
 - `POST /auth/login`, `GET /auth/me` con permisos por rol, `Logueado` y `SoloAdmin`, y el script `crear_admin`.
-- Tests de login correcto, contraseña incorrecta y acceso sin sesión.
-- En el front: login, `AuthProvider`, guards por sesión y permiso, menú según `/auth/me` y un 401 que cierra la sesión.
+- ABM de usuarios: `GET`, `POST` y `PATCH /usuarios` (solo admin). El `PATCH` también activa o desactiva y blanquea la contraseña. El hash nunca sale en las respuestas y el email es único sin importar mayúsculas.
+- Errores de validación en español y con el mismo formato por campo (`ErrorDeCampo` en `core/excepciones.py`) para que el front los muestre junto a cada input.
+- Tests: login, token vencido, usuario desactivado, Vendedor con 403 y el ABM completo.
+- En el front: login, guards, menú por permisos y la pantalla de Usuarios (tabla, alta y edición en un `Sheet`, activar o desactivar con confirmación).
 
-**Fase 1, lo que falta (ABM de usuarios):**
-- **Backend:** `usuarios/schemas.py` y `service.py` están vacíos, y `router.py` solo tiene el prefijo y `SoloAdmin`. Hay que escribir:
-  - `UsuarioCreate`, `UsuarioUpdate` y `UsuarioRead`, sin exponer nunca el hash;
-  - `UsuarioService`: alta con contraseña hasheada, email único, edición, cambio de rol, activar o desactivar, y blanqueo de contraseña;
-  - `GET`, `POST` y `PATCH` en `/usuarios`.
-- **Tests:** token vencido, Vendedor con 403 en `/usuarios` y el ABM completo.
-- **Front:** `UsuariosPage` hoy muestra "módulo pendiente". Hay que armar:
-  - la tabla de usuarios;
-  - un formulario de alta y edición en un `Sheet`, con los errores del 422 junto a cada campo;
-  - el botón para activar o desactivar.
-  - De shadcn hay que sumar `table`, `select`, `badge` y `dialog`.
-- **Cierre:** probar con los dos roles en el navegador, marcar la Fase 1 y commitear.
-
-**Para confirmar antes de implementar el ABM de usuarios:**
-- Los usuarios se **desactivan, no se borran**, porque las ventas y reservas guardan `usuario_id`.
-- El admin no puede desactivarse a sí mismo ni dejar el sistema sin ningún Administrador activo.
-
-Ninguna de las dos cosas está en las reglas: son propuestas.
+**Decisiones confirmadas (21/11/2026):**
+- Los usuarios se **desactivan, no se borran**, porque ventas y reservas guardan `usuario_id`.
+- El admin no puede desactivarse ni quitarse el rol a sí mismo, y el sistema nunca queda sin un Administrador activo.
 
 ## Cómo se trabaja cada fase
 

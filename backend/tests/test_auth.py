@@ -26,3 +26,19 @@ def test_vendedor_no_ve_costos(client, vendedor):
     permisos = client.get("/auth/me", headers=auth_header(vendedor)).json()["permisos"]
     assert "ver_costos" not in permisos
     assert "tipo_cambio:editar" not in permisos
+
+
+def test_token_vencido(client, admin, monkeypatch):
+    from app.core.config import get_settings
+
+    monkeypatch.setattr(get_settings(), "jwt_minutos", -1)
+    vencido = auth_header(admin)
+    assert client.get("/auth/me", headers=vencido).status_code == 401
+
+
+def test_usuario_desactivado_pierde_la_sesion(client, session, admin):
+    headers = auth_header(admin)
+    admin.activo = False
+    session.add(admin)
+    session.commit()
+    assert client.get("/auth/me", headers=headers).status_code == 401
