@@ -21,6 +21,8 @@ Con SQLite las tablas salen de los modelos (`app/modules/models.py`).
 
 ## Con Docker (PostgreSQL)
 
+La configuración de la API (`JWT_SECRET`, R2) se lee de `~/.config/iconic/api.env`, un archivo fuera del repo que comparten todos los worktrees. Si no existe, crealo a partir de `backend/.env.example` (sin `ENTORNO` ni `DATABASE_URL`, que los pone Compose). Un `backend/.env` en un worktree pisa esos valores solo ahí.
+
 ```bash
 docker compose up --build        # db + api + frontend
                                  # app:     http://localhost:8080 (Nginx sirve el front y reenvía /api a la API)

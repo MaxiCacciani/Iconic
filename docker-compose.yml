@@ -20,7 +20,13 @@ services:
 
   api:
     build: ./backend
-    env_file: ./backend/.env
+    env_file:
+      # Global para todos los worktrees (fuera del repo); ver README.
+      - path: ${HOME}/.config/iconic/api.env
+        required: false
+      # Opcional: pisa los valores globales solo en este worktree.
+      - path: ./backend/.env
+        required: false
     environment:
       ENTORNO: docker
       DATABASE_URL: postgresql+psycopg://iconic:${POSTGRES_PASSWORD:-iconic}@db:5432/iconic
