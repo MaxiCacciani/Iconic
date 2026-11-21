@@ -1,7 +1,13 @@
 import pytest
 from sqlmodel import select
 
-from app.modules.catalogos.models import Categoria, MetodoPago, TipoCategoria
+from app.modules.catalogos.models import (
+    Categoria,
+    MetodoPago,
+    ModeloCapacidad,
+    ModeloColor,
+    TipoCategoria,
+)
 from app.modules.catalogos.semilla import sembrar_catalogos
 from tests.conftest import auth_header
 
@@ -260,3 +266,110 @@ def test_estado_inicial_unico(client, admin):
     assert r.status_code == 201
     estados = client.get("/catalogos/estados-reclamo", headers=h).json()
     assert [e["nombre"] for e in estados if e["es_inicial"]] == ["Resuelto"]
+
+
+# ─── Colores y capacidades de cada modelo ────────────────────────────────────
+def _crear(client, h, slug: str, categoria: int, nombre: str) -> int:
+    r = client.post(
+        f"/catalogos/{slug}", json={"categoria_id": categoria, "nombre": nombre}, headers=h
+    )
+    assert r.status_code == 201, r.text
+    return r.json()["id"]
+
+
+@pytest.fixture
+def iphone_15(client, admin):
+    """Un iPhone 15 y los colores y capacidades de la categoría iPhone."""
+    h = auth_header(admin)
+    iphone = _categoria(client, admin, "iPhone")
+    return {
+        "h": h,
+        "categoria": iphone,
+        "modelo": _crear(client, h, "modelos", iphone, "15"),
+        "rosa": _crear(client, h, "colores", iphone, "Rosa"),
+        "negro": _crear(client, h, "colores", iphone, "Negro"),
+        "verde": _crear(client, h, "colores", iphone, "Verde alpino"),
+        "128": _crear(client, h, "capacidades", iphone, "128 GB"),
+        "64": _crear(client, h, "capacidades", iphone, "64 GB"),
+    }
+
+
+def _opciones(client, h, slug: str, modelo: int) -> list[str]:
+    r = client.get(f"/catalogos/{slug}", params={"modelo_id": modelo}, headers=h)
+    assert r.status_code == 200, r.text
+    return [x["nombre"] for x in r.json()]
+
+
+def test_modelo_sin_asignar_ofrece_todos_los_de_la_categoria(client, iphone_15):
+    d = iphone_15
+    modelo = client.get("/catalogos/modelos", headers=d["h"]).json()[0]
+    assert modelo["color_ids"] == [] and modelo["capacidad_ids"] == []
+    assert _opciones(client, d["h"], "colores", d["modelo"]) == ["Negro", "Rosa", "Verde alpino"]
+    assert _opciones(client, d["h"], "capacidades", d["modelo"]) == ["128 GB", "64 GB"]
+
+
+def test_asignar_colores_y_capacidades(client, iphone_15):
+    d = iphone_15
+    url = f"/catalogos/modelos/{d['modelo']}"
+    r = client.put(
+        f"{url}/colores", json={"ids": [d["rosa"], d["negro"], d["rosa"]]}, headers=d["h"]
+    )
+    assert r.status_code == 200, r.text
+    assert r.json()["color_ids"] == sorted([d["rosa"], d["negro"]])
+    r = client.put(f"{url}/capacidades", json={"ids": [d["128"]]}, headers=d["h"])
+    assert r.json()["capacidad_ids"] == [d["128"]]
+    # Asignar capacidades no toca los colores.
+    assert r.json()["color_ids"] == sorted([d["rosa"], d["negro"]])
+
+    assert _opciones(client, d["h"], "colores", d["modelo"]) == ["Negro", "Rosa"]
+    assert _opciones(client, d["h"], "capacidades", d["modelo"]) == ["128 GB"]
+
+    # Vaciar la lista vuelve a ofrecer todos.
+    r = client.put(f"{url}/colores", json={"ids": []}, headers=d["h"])
+    assert r.json()["color_ids"] == []
+    assert len(_opciones(client, d["h"], "colores", d["modelo"])) == 3
+
+
+def test_no_se_asigna_un_color_de_otra_categoria(client, admin, iphone_15):
+    d = iphone_15
+    ipad = _categoria(client, admin, "iPad")
+    azul = _crear(client, d["h"], "colores", ipad, "Azul cielo")
+    url = f"/catalogos/modelos/{d['modelo']}"
+
+    r = client.put(f"{url}/colores", json={"ids": [d["rosa"], azul]}, headers=d["h"])
+    assert _errores(r) == {"ids": "«Azul cielo» no es un color de la categoría del modelo."}
+    r = client.put(f"{url}/capacidades", json={"ids": [999]}, headers=d["h"])
+    assert _errores(r) == {"ids": "Una de las capacidades no existe."}
+    # Nada quedó a medias.
+    assert client.get("/catalogos/modelos", headers=d["h"]).json()[0]["color_ids"] == []
+
+
+def test_modelo_inexistente(client, iphone_15):
+    d = iphone_15
+    r = client.put("/catalogos/modelos/999/colores", json={"ids": []}, headers=d["h"])
+    assert r.status_code == 404
+    r = client.get("/catalogos/colores", params={"modelo_id": 999}, headers=d["h"])
+    assert r.status_code == 404
+
+
+def test_vendedor_ve_las_opciones_pero_no_asigna(client, vendedor, iphone_15):
+    d = iphone_15
+    hv = auth_header(vendedor)
+    assert len(_opciones(client, hv, "colores", d["modelo"])) == 3
+    r = client.put(f"/catalogos/modelos/{d['modelo']}/colores", json={"ids": []}, headers=hv)
+    assert r.status_code == 403
+
+
+def test_borrar_color_o_modelo_se_lleva_la_asignacion(client, session, iphone_15):
+    d = iphone_15
+    url = f"/catalogos/modelos/{d['modelo']}"
+    client.put(f"{url}/colores", json={"ids": [d["rosa"], d["negro"]]}, headers=d["h"])
+    client.put(f"{url}/capacidades", json={"ids": [d["128"]]}, headers=d["h"])
+
+    # Estar asignado a un modelo no impide borrar el color.
+    assert client.delete(f"/catalogos/colores/{d['rosa']}", headers=d["h"]).status_code == 204
+    assert client.get("/catalogos/modelos", headers=d["h"]).json()[0]["color_ids"] == [d["negro"]]
+
+    assert client.delete(url, headers=d["h"]).status_code == 204
+    assert session.exec(select(ModeloColor)).all() == []
+    assert session.exec(select(ModeloCapacidad)).all() == []

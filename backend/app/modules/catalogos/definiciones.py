@@ -3,6 +3,8 @@
 El ABMC es el mismo para todos (`service.py`, `router.py`); acá se declara lo que cambia:
 el campo de texto, si se agrupa por categoría, a qué otra tabla apunta y si tiene un
 valor que tiene que ser único (el método de pago predeterminado, el estado inicial).
+
+`ASIGNACIONES` declara lo que cada modelo elige de su categoría: colores y capacidades.
 """
 
 from collections.abc import Callable
@@ -60,6 +62,21 @@ class Definicion:
     referencias: dict[str, Referencia] = field(default_factory=dict)
     marca: Marca | None = None
     validar: Callable[[SQLModel], None] | None = None
+    por_modelo: str | None = None
+    """Colores y capacidades: el atributo de `Modelo` con los asignados. Permite listar
+    las opciones de un modelo (`?modelo_id=`)."""
+
+
+@dataclass(frozen=True)
+class Asignacion:
+    """Lo que un modelo elige de su categoría. `relacion` es el atributo de `Modelo` y el
+    tramo final de la URL (`/catalogos/modelos/{id}/colores`)."""
+
+    relacion: str
+    modelo: type[SQLModel]
+    no_existe: str
+    otra_categoria: str
+    """Con `{}` para el nombre: "«Verde alpino» no es de la categoría del modelo"."""
 
 
 def _validar_tipo_categoria(tipo: SQLModel) -> None:
@@ -105,7 +122,7 @@ DEFINICIONES: list[Definicion] = [
         modelo=Modelo,
         crear=s.ItemDeCategoriaCreate,
         editar=s.ItemDeCategoriaUpdate,
-        leer=s.ItemDeCategoriaRead,
+        leer=s.ModeloRead,
         repetido="Esta categoría ya tiene un modelo con ese nombre.",
         ambito="categoria_id",
         referencias={"categoria_id": _CATEGORIA},
@@ -120,6 +137,7 @@ DEFINICIONES: list[Definicion] = [
         repetido="Esta categoría ya tiene esa capacidad.",
         ambito="categoria_id",
         referencias={"categoria_id": _CATEGORIA},
+        por_modelo="capacidades",
     ),
     Definicion(
         slug="colores",
@@ -131,6 +149,7 @@ DEFINICIONES: list[Definicion] = [
         repetido="Esta categoría ya tiene ese color.",
         ambito="categoria_id",
         referencias={"categoria_id": _CATEGORIA},
+        por_modelo="colores",
     ),
     Definicion(
         slug="proveedores",
@@ -200,3 +219,18 @@ DEFINICIONES: list[Definicion] = [
 ]
 
 POR_SLUG = {d.slug: d for d in DEFINICIONES}
+
+ASIGNACIONES: list[Asignacion] = [
+    Asignacion(
+        relacion="colores",
+        modelo=Color,
+        no_existe="Uno de los colores no existe.",
+        otra_categoria="«{}» no es un color de la categoría del modelo.",
+    ),
+    Asignacion(
+        relacion="capacidades",
+        modelo=Capacidad,
+        no_existe="Una de las capacidades no existe.",
+        otra_categoria="«{}» no es una capacidad de la categoría del modelo.",
+    ),
+]

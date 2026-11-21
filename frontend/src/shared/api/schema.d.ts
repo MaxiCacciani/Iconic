@@ -469,6 +469,40 @@ export interface paths {
     patch: operations["actualizar_metodos_pago"]
     trace?: never
   }
+  "/catalogos/modelos/{item_id}/colores": {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    /** Asignar */
+    put: operations["asignar_colores_a_modelo"]
+    post?: never
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  "/catalogos/modelos/{item_id}/capacidades": {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    /** Asignar */
+    put: operations["asignar_capacidades_a_modelo"]
+    post?: never
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
   "/tipo-cambio/hoy": {
     parameters: {
       query?: never
@@ -525,6 +559,14 @@ export interface paths {
 export type webhooks = Record<string, never>
 export interface components {
   schemas: {
+    /**
+     * AsignacionUpdate
+     * @description Reemplaza la lista completa. Vacía: el modelo vuelve a ofrecer todos.
+     */
+    AsignacionUpdate: {
+      /** Ids */
+      ids: number[]
+    }
     /** AvisoRead */
     AvisoRead: {
       tipo: components["schemas"]["TipoAviso"]
@@ -684,6 +726,22 @@ export interface components {
       nombre?: string | null
       /** Predeterminado */
       predeterminado?: boolean | null
+    }
+    /**
+     * ModeloRead
+     * @description `color_ids` y `capacidad_ids` vacíos: el modelo ofrece todos los de su categoría.
+     */
+    ModeloRead: {
+      /** Id */
+      id: number
+      /** Categoria Id */
+      categoria_id: number
+      /** Nombre */
+      nombre: string
+      /** Color Ids */
+      color_ids: number[]
+      /** Capacidad Ids */
+      capacidad_ids: number[]
     }
     /** ResumenRead */
     ResumenRead: {
@@ -1261,7 +1319,7 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          "application/json": components["schemas"]["ItemDeCategoriaRead"][]
+          "application/json": components["schemas"]["ModeloRead"][]
         }
       }
       /** @description Validation Error */
@@ -1294,7 +1352,7 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          "application/json": components["schemas"]["ItemDeCategoriaRead"]
+          "application/json": components["schemas"]["ModeloRead"]
         }
       }
       /** @description Validation Error */
@@ -1358,7 +1416,7 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          "application/json": components["schemas"]["ItemDeCategoriaRead"]
+          "application/json": components["schemas"]["ModeloRead"]
         }
       }
       /** @description Validation Error */
@@ -1377,6 +1435,8 @@ export interface operations {
       query?: {
         /** @description Solo de esa categoría */
         categoria_id?: number | null
+        /** @description Las opciones de ese modelo: sus asignados o, si no tiene, todos los de su categoría */
+        modelo_id?: number | null
       }
       header?: never
       path?: never
@@ -1506,6 +1566,8 @@ export interface operations {
       query?: {
         /** @description Solo de esa categoría */
         categoria_id?: number | null
+        /** @description Las opciones de ese modelo: sus asignados o, si no tiene, todos los de su categoría */
+        modelo_id?: number | null
       }
       header?: never
       path?: never
@@ -2319,6 +2381,76 @@ export interface operations {
         }
         content: {
           "application/json": components["schemas"]["MetodoPagoRead"]
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"]
+        }
+      }
+    }
+  }
+  asignar_colores_a_modelo: {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        item_id: number
+      }
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["AsignacionUpdate"]
+      }
+    }
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          "application/json": components["schemas"]["ModeloRead"]
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"]
+        }
+      }
+    }
+  }
+  asignar_capacidades_a_modelo: {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        item_id: number
+      }
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["AsignacionUpdate"]
+      }
+    }
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          "application/json": components["schemas"]["ModeloRead"]
         }
       }
       /** @description Validation Error */

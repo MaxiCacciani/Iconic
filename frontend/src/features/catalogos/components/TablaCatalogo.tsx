@@ -1,5 +1,6 @@
 import {
   DotsThreeVerticalIcon,
+  PaletteIcon,
   PencilSimpleIcon,
   TrashIcon,
 } from "@phosphor-icons/react"
@@ -22,8 +23,12 @@ import {
   TableRow,
 } from "@/shared/ui/table"
 
-import type { ItemCatalogo } from "../api"
-import { valorDe, type DefinicionCatalogo } from "../catalogos"
+import type { ItemCatalogo, Modelo } from "../api"
+import {
+  resumenAsignaciones,
+  valorDe,
+  type DefinicionCatalogo,
+} from "../catalogos"
 
 type Props = {
   definicion: DefinicionCatalogo
@@ -34,6 +39,8 @@ type Props = {
   tipos?: Map<number, string>
   onEditar: (item: ItemCatalogo) => void
   onBorrar: (item: ItemCatalogo) => void
+  /** Modelos: abre la elección de colores y capacidades. */
+  onAsignar?: (modelo: Modelo) => void
 }
 
 export function TablaCatalogo({
@@ -43,7 +50,9 @@ export function TablaCatalogo({
   tipos,
   onEditar,
   onBorrar,
+  onAsignar,
 }: Props) {
+  const asignaciones = definicion.conAsignaciones && onAsignar
   const texto = (item: ItemCatalogo) =>
     String(valorDe(item, definicion.campoTexto))
 
@@ -55,6 +64,11 @@ export function TablaCatalogo({
             <TableHead>{definicion.etiquetaTexto}</TableHead>
             {categorias && <TableHead>Categoría</TableHead>}
             {tipos && <TableHead>Tipo</TableHead>}
+            {asignaciones && (
+              <TableHead className="hidden sm:table-cell">
+                Colores y capacidades
+              </TableHead>
+            )}
             <TableHead className="w-12">
               <span className="sr-only">Acciones</span>
             </TableHead>
@@ -85,6 +99,11 @@ export function TablaCatalogo({
                   {tipos.get(Number(valorDe(item, "tipo_categoria_id")))}
                 </TableCell>
               )}
+              {asignaciones && (
+                <TableCell className="hidden text-muted-foreground sm:table-cell">
+                  {resumenAsignaciones(item as Modelo)}
+                </TableCell>
+              )}
               <TableCell>
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
@@ -101,6 +120,14 @@ export function TablaCatalogo({
                       <PencilSimpleIcon />
                       Editar
                     </DropdownMenuItem>
+                    {asignaciones && (
+                      <DropdownMenuItem
+                        onSelect={() => onAsignar(item as Modelo)}
+                      >
+                        <PaletteIcon />
+                        Colores y capacidades…
+                      </DropdownMenuItem>
+                    )}
                     <DropdownMenuSeparator />
                     <DropdownMenuItem
                       variant="destructive"

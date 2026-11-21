@@ -1,7 +1,8 @@
 """DTOs de entrada y salida de los catálogos (Create / Read / Update).
 
 Los catálogos que solo tienen nombre (proveedores, localidades, diagnósticos) comparten
-`ItemCatalogo*`. Modelos, capacidades y colores comparten `ItemDeCategoria*`.
+`ItemCatalogo*`. Modelos, capacidades y colores comparten `ItemDeCategoria*`; el modelo,
+además, devuelve qué colores y capacidades de su categoría tiene asignados.
 """
 
 from typing import Annotated
@@ -45,6 +46,19 @@ class ItemDeCategoriaUpdate(BaseModel):
 class ItemDeCategoriaRead(_Read):
     categoria_id: int
     nombre: str
+
+
+class ModeloRead(ItemDeCategoriaRead):
+    """`color_ids` y `capacidad_ids` vacíos: el modelo ofrece todos los de su categoría."""
+
+    color_ids: list[int]
+    capacidad_ids: list[int]
+
+
+class AsignacionUpdate(BaseModel):
+    """Reemplaza la lista completa. Vacía: el modelo vuelve a ofrecer todos."""
+
+    ids: list[int]
 
 
 # ─── Tipos de categoría ───────────────────────────────────────────────────────

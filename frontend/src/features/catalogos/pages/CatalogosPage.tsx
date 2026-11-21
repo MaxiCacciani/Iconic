@@ -24,8 +24,9 @@ import {
 } from "@/shared/ui/select"
 import { Skeleton } from "@/shared/ui/skeleton"
 
-import type { ItemCatalogo, Slug } from "../api"
+import type { ItemCatalogo, Modelo, Slug } from "../api"
 import { definicionDe, valorDe } from "../catalogos"
+import { AsignacionesSheet } from "../components/AsignacionesSheet"
 import { ConfirmarBorrar } from "../components/ConfirmarBorrar"
 import { ItemSheet } from "../components/ItemSheet"
 import { NavCatalogos } from "../components/NavCatalogos"
@@ -54,6 +55,9 @@ export function CatalogosPage() {
   const [sheetAbierto, setSheetAbierto] = useState(false)
   const [editando, setEditando] = useState<ItemCatalogo | null>(null)
   const [aBorrar, setABorrar] = useState<ItemCatalogo | null>(null)
+  // Se guarda el id: el modelo se lee de la lista, que se refresca al guardar.
+  const [asignando, setAsignando] = useState<{ id: number; apertura: number }>()
+  const [asignacionAbierta, setAsignacionAbierta] = useState(false)
 
   const nombresCategoria = useMemo(
     () => new Map(categorias.data?.map((c) => [c.id, c.nombre])),
@@ -67,6 +71,9 @@ export function CatalogosPage() {
     ? nombresCategoria.get(categoriaId)
     : undefined
   const texto = (item: ItemCatalogo) => String(valorDe(item, d.campoTexto))
+  const modeloAsignando = d.conAsignaciones
+    ? (items.data as Modelo[] | undefined)?.find((m) => m.id === asignando?.id)
+    : undefined
 
   function elegirCatalogo(slug: Slug) {
     setParams({ lista: slug })
@@ -87,6 +94,14 @@ export function CatalogosPage() {
   function abrirEdicion(item: ItemCatalogo) {
     setEditando(item)
     setSheetAbierto(true)
+  }
+
+  function abrirAsignaciones(modelo: Modelo) {
+    setAsignando((actual) => ({
+      id: modelo.id,
+      apertura: (actual?.apertura ?? 0) + 1,
+    }))
+    setAsignacionAbierta(true)
   }
 
   function borrar(item: ItemCatalogo) {
@@ -210,6 +225,7 @@ export function CatalogosPage() {
               tipos={d.conTipo ? nombresTipo : undefined}
               onEditar={abrirEdicion}
               onBorrar={setABorrar}
+              onAsignar={d.conAsignaciones ? abrirAsignaciones : undefined}
             />
           )}
         </section>
@@ -223,6 +239,17 @@ export function CatalogosPage() {
         categorias={categorias.data ?? []}
         categoriaInicial={categoriaId}
         tipos={tipos.data ?? []}
+      />
+      <AsignacionesSheet
+        abierto={asignacionAbierta && Boolean(modeloAsignando)}
+        onAbiertoChange={setAsignacionAbierta}
+        modelo={modeloAsignando ?? null}
+        categoria={
+          modeloAsignando
+            ? nombresCategoria.get(modeloAsignando.categoria_id)
+            : undefined
+        }
+        apertura={asignando?.apertura ?? 0}
       />
       <ConfirmarBorrar
         texto={aBorrar ? texto(aBorrar) : null}

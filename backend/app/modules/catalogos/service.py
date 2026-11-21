@@ -6,9 +6,10 @@ from pydantic import BaseModel
 from sqlalchemy.exc import IntegrityError
 from sqlmodel import SQLModel
 
-from app.core.excepciones import Conflicto, ErrorDeCampo
+from app.core.excepciones import Conflicto, ErrorDeCampo, NoEncontrado
 from app.core.uow import UnidadDeTrabajo
-from app.modules.catalogos.definiciones import Definicion
+from app.modules.catalogos.definiciones import Asignacion, Definicion
+from app.modules.catalogos.models import Modelo
 from app.modules.catalogos.repository import CatalogoRepository
 
 
@@ -20,8 +21,21 @@ class CatalogoService:
             uow.session, definicion.modelo, definicion.campo_texto, definicion.ambito
         )
 
-    def listar(self, ambito_id: int | None = None) -> Sequence[SQLModel]:
+    def listar(
+        self, ambito_id: int | None = None, modelo_id: int | None = None
+    ) -> Sequence[SQLModel]:
+        if self.d.por_modelo and modelo_id is not None:
+            return self.opciones_de_modelo(modelo_id)
         return self.repo.todos(ambito_id)
+
+    def opciones_de_modelo(self, modelo_id: int) -> Sequence[SQLModel]:
+        """Lo que se ofrece al cargar un producto de ese modelo: los colores (o capacidades)
+        que tiene asignados o, si no tiene ninguno, todos los de su categoría."""
+        modelo = _modelo_o_falla(self.uow, modelo_id)
+        asignados = getattr(modelo, self.d.por_modelo)  # type: ignore[arg-type]
+        if not asignados:
+            return self.repo.todos(modelo.categoria_id)
+        return sorted(asignados, key=lambda e: self._texto(e).lower())
 
     def crear(self, datos: BaseModel) -> SQLModel:
         with self.uow:
@@ -100,3 +114,37 @@ class CatalogoService:
             if otra.id != entidad.id:  # type: ignore[attr-defined]
                 setattr(otra, campo, False)
                 self.repo.actualizar(otra)
+
+
+def _modelo_o_falla(uow: UnidadDeTrabajo, modelo_id: int) -> Modelo:
+    modelo = uow.session.get(Modelo, modelo_id)
+    if modelo is None:
+        raise NoEncontrado(f"Modelo #{modelo_id} no existe")
+    return modelo
+
+
+class AsignacionService:
+    """Qué colores o capacidades de su categoría tiene un modelo."""
+
+    def __init__(self, uow: UnidadDeTrabajo, asignacion: Asignacion) -> None:
+        self.uow = uow
+        self.a = asignacion
+
+    def asignar(self, modelo_id: int, ids: list[int]) -> Modelo:
+        """Reemplaza la lista completa. Vacía, el modelo vuelve a ofrecer todos."""
+        with self.uow:
+            modelo = _modelo_o_falla(self.uow, modelo_id)
+            elegidos = []
+            for id in dict.fromkeys(ids):  # sin repetidos, en el orden en que llegaron
+                item = self.uow.session.get(self.a.modelo, id)
+                if item is None:
+                    raise ErrorDeCampo("ids", self.a.no_existe)
+                # La categoría de un modelo, color o capacidad no cambia, así que esto
+                # alcanza para que la asignación siga siendo válida.
+                if item.categoria_id != modelo.categoria_id:  # type: ignore[attr-defined]
+                    raise ErrorDeCampo("ids", self.a.otra_categoria.format(item.nombre))  # type: ignore[attr-defined]
+                elegidos.append(item)
+            setattr(modelo, self.a.relacion, elegidos)
+            self.uow.session.add(modelo)
+        self.uow.session.refresh(modelo)
+        return modelo

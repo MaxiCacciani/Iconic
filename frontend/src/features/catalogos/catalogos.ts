@@ -1,6 +1,6 @@
 // Cómo se muestra cada catálogo. Solo textos y qué campos tiene el formulario:
 // las reglas (repetidos, el predeterminado único, qué se puede borrar) las decide la API.
-import type { ItemCatalogo, Slug } from "./api"
+import type { ItemCatalogo, Modelo, Slug } from "./api"
 
 export type Interruptor = {
   campo: string
@@ -25,6 +25,8 @@ export type DefinicionCatalogo = {
   porCategoria?: boolean
   /** Categorías: cada una es de un tipo. */
   conTipo?: boolean
+  /** Modelos: eligen qué colores y capacidades de su categoría tienen. */
+  conAsignaciones?: boolean
   interruptores?: Interruptor[]
 }
 
@@ -48,10 +50,11 @@ export const CATALOGOS: DefinicionCatalogo[] = [
     nuevo: "Nuevo modelo",
     grupo: "Productos",
     descripcion:
-      "Los modelos que se eligen al cargar un producto de cada categoría.",
+      "Los modelos que se eligen al cargar un producto de cada categoría, con los colores y capacidades en que vinieron.",
     campoTexto: "nombre",
     etiquetaTexto: "Nombre",
     porCategoria: true,
+    conAsignaciones: true,
   },
   {
     slug: "capacidades",
@@ -213,6 +216,22 @@ export function definicionDe(slug: string | null): DefinicionCatalogo {
     CATALOGOS.find((c) => c.slug === slug) ??
     CATALOGOS.find((c) => c.slug === CATALOGO_INICIAL)!
   )
+}
+
+const cuantos = (n: number, uno: string, varios: string, todos: string) =>
+  n === 0 ? todos : `${n} ${n === 1 ? uno : varios}`
+
+/** "2 colores · Todas las capacidades": lo que un modelo tiene asignado. */
+export function resumenAsignaciones(modelo: Modelo): string {
+  return [
+    cuantos(modelo.color_ids.length, "color", "colores", "Todos los colores"),
+    cuantos(
+      modelo.capacidad_ids.length,
+      "capacidad",
+      "capacidades",
+      "Todas las capacidades"
+    ),
+  ].join(" · ")
 }
 
 /** Lee un campo de un ítem de cualquier catálogo. */

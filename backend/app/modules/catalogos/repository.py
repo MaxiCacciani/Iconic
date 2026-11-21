@@ -58,12 +58,14 @@ class CatalogoRepository[M: SQLModel](RepositorioBase[M]):
         """Qué tablas apuntan a esta fila y cuántas veces, leído de las claves foráneas.
 
         Así, cuando una fase suma una tabla que usa un catálogo, este chequeo la cubre sola.
+        Las claves con ON DELETE CASCADE no cuentan: esas filas se van con la que se borra
+        (por ejemplo, los colores asignados a un modelo).
         """
         tabla = self.modelo.__table__  # type: ignore[attr-defined]
         usos: list[tuple[str, int]] = []
         for otra in SQLModel.metadata.sorted_tables:
             for fk in otra.foreign_keys:
-                if fk.column.table is not tabla:
+                if fk.column.table is not tabla or fk.ondelete == "CASCADE":
                     continue
                 cantidad = self.session.exec(
                     select(func.count()).select_from(otra).where(fk.parent == entidad.id)  # type: ignore[attr-defined]

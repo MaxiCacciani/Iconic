@@ -5,7 +5,7 @@ la lógica (estados, modalidad, rol, condición) no están acá: son ENUMs (`com
 """
 
 from sqlalchemy import Index, UniqueConstraint, text
-from sqlmodel import Field, SQLModel
+from sqlmodel import Field, Relationship, SQLModel
 
 
 class TipoCategoria(SQLModel, table=True):
@@ -29,6 +29,31 @@ class Categoria(SQLModel, table=True):
     tipo_categoria_id: int = Field(foreign_key="tipos_categoria.id")
 
 
+class ModeloColor(SQLModel, table=True):
+    """Qué colores de su categoría tiene cada modelo (el iPhone 15 no vino en verde alpino).
+
+    Un modelo sin colores asignados ofrece todos los de su categoría. Al borrar el modelo
+    o el color, la asignación se va con él.
+    """
+
+    __tablename__ = "modelo_colores"
+
+    modelo_id: int = Field(foreign_key="modelos.id", primary_key=True, ondelete="CASCADE")
+    color_id: int = Field(foreign_key="colores.id", primary_key=True, ondelete="CASCADE")
+
+
+class ModeloCapacidad(SQLModel, table=True):
+    """Qué capacidades de su categoría tiene cada modelo (el iPhone 15 Pro no tiene 64 GB).
+
+    Igual que `ModeloColor`: sin asignar, ofrece todas las de la categoría.
+    """
+
+    __tablename__ = "modelo_capacidades"
+
+    modelo_id: int = Field(foreign_key="modelos.id", primary_key=True, ondelete="CASCADE")
+    capacidad_id: int = Field(foreign_key="capacidades.id", primary_key=True, ondelete="CASCADE")
+
+
 class Modelo(SQLModel, table=True):
     __tablename__ = "modelos"
     __table_args__ = (UniqueConstraint("categoria_id", "nombre"),)
@@ -36,6 +61,25 @@ class Modelo(SQLModel, table=True):
     id: int | None = Field(default=None, primary_key=True)
     categoria_id: int = Field(foreign_key="categorias.id")
     nombre: str
+
+    colores: list["Color"] = Relationship(
+        back_populates="modelos",
+        link_model=ModeloColor,
+        sa_relationship_kwargs={"lazy": "selectin"},
+    )
+    capacidades: list["Capacidad"] = Relationship(
+        back_populates="modelos",
+        link_model=ModeloCapacidad,
+        sa_relationship_kwargs={"lazy": "selectin"},
+    )
+
+    @property
+    def color_ids(self) -> list[int]:
+        return sorted(c.id for c in self.colores if c.id is not None)
+
+    @property
+    def capacidad_ids(self) -> list[int]:
+        return sorted(c.id for c in self.capacidades if c.id is not None)
 
 
 class Capacidad(SQLModel, table=True):
@@ -46,6 +90,8 @@ class Capacidad(SQLModel, table=True):
     categoria_id: int = Field(foreign_key="categorias.id")
     nombre: str
 
+    modelos: list[Modelo] = Relationship(back_populates="capacidades", link_model=ModeloCapacidad)
+
 
 class Color(SQLModel, table=True):
     __tablename__ = "colores"
@@ -54,6 +100,8 @@ class Color(SQLModel, table=True):
     id: int | None = Field(default=None, primary_key=True)
     categoria_id: int = Field(foreign_key="categorias.id")
     nombre: str
+
+    modelos: list[Modelo] = Relationship(back_populates="colores", link_model=ModeloColor)
 
 
 class Proveedor(SQLModel, table=True):

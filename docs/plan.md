@@ -22,9 +22,9 @@ Al cerrar una fase, marcala acá.
 
 ## Estado actual (21/11/2026)
 
-**Verificado:** `uv run pytest` pasa 94 tests, `ruff` está limpio, y `npm run build`, `typecheck` y `oxlint` pasan sin errores ni avisos. `docker compose up` levanta todo y la app responde en `localhost:8080`.
+**Verificado:** `uv run pytest` pasa 100 tests, `ruff` está limpio, y `npm run build`, `typecheck` y `oxlint` pasan sin errores ni avisos. `docker compose up` levanta todo y la app responde en `localhost:8080`.
 
-**Fase 0:** completa. Además, `schema.sql` ya tiene las 26 tablas del DER (los catálogos iniciales pasaron a la semilla de la Fase 3). Las clases SQLModel solo existen para `usuarios`: las demás se escriben en su fase.
+**Fase 0:** completa. Además, `schema.sql` ya tiene las tablas del DER (26 al cerrar la fase; 28 desde que se sumaron `modelo_colores` y `modelo_capacidades`) (los catálogos iniciales pasaron a la semilla de la Fase 3). Las clases SQLModel solo existen para `usuarios`: las demás se escriben en su fase.
 
 **Fase 1:** completa y probada en el navegador con los dos roles.
 - `POST /auth/login`, `GET /auth/me` con permisos por rol, `Logueado` y `SoloAdmin`, y el script `crear_admin`.
@@ -50,11 +50,19 @@ Al cerrar una fase, marcala acá.
 - Un tipo de categoría "por cantidad" no puede llevar IMEI, batería ni controles.
 - **Semilla:** `catalogos/semilla.py` reemplaza a `catalogos.sql`. La API la corre al arrancar (en PostgreSQL y en SQLite) y solo carga las tablas vacías. Las reglas no traen modelos, capacidades, colores ni localidades: se cargan desde la pantalla.
 - En el front: feature `catalogos` con una pantalla genérica (lista de catálogos, tabla, alta y edición en un `Sheet`, borrado con confirmación). El catálogo y la categoría elegidos van en la URL. `useCatalogoQuery` se exporta para las fases siguientes.
+- **Colores y capacidades por modelo (agregado después del cierre, 21/11/2026):** tablas intermedias `modelo_colores` y `modelo_capacidades` (clave compuesta, `ON DELETE CASCADE` en las dos puntas). Cada modelo marca cuáles de los colores y capacidades de su categoría tiene; sin ninguno marcado, se ofrecen todos los de la categoría. Lo decide la API, no el front.
+  - `PUT /catalogos/modelos/{id}/colores` y `/capacidades` (solo admin) reemplazan la lista completa con `{"ids": [...]}`. Rechazan ids inexistentes o de otra categoría (422 en `ids`).
+  - `GET /catalogos/colores?modelo_id=` y `/capacidades?modelo_id=` (todos los logueados) devuelven las opciones de ese modelo: los asignados o, si no tiene, todos los de su categoría.
+  - `ModeloRead` suma `color_ids` y `capacidad_ids`.
+  - Borrar un color, una capacidad o un modelo se lleva sus asignaciones: estar asignado no cuenta como "en uso" (`usos()` saltea las claves con `ON DELETE CASCADE`).
+  - En el front: columna "Colores y capacidades" en Modelos y la acción "Colores y capacidades…" en cada fila, que abre un `Sheet` con casillas.
+  - Reglas (sección 2.1 y tabla de cambios), `schema.sql`, el DER (páginas 1 y 2) y 6 tests nuevos.
 - **Pendiente para la Fase 4:** decidir si se bloquea cambiar los datos de un tipo de categoría (o el tipo de una categoría) cuando ya hay productos cargados.
 
 **Decisiones confirmadas (21/11/2026):**
 - Los usuarios se **desactivan, no se borran**, porque ventas y reservas guardan `usuario_id`.
 - El admin no puede desactivarse ni quitarse el rol a sí mismo, y el sistema nunca queda sin un Administrador activo.
+- Colores y capacidades siguen siendo de la categoría (así "Negro" se carga una sola vez), y cada modelo marca los suyos en una tabla intermedia. Sin marcar, se ofrecen todos. Se descartó que el color cuelgue directo del modelo porque obligaba a repetir los mismos colores en cada modelo.
 
 ## Cómo se trabaja cada fase
 
@@ -117,14 +125,14 @@ Al cerrar una fase, marcala acá.
 ## Fase 4 — Productos y stock
 - **Backend:**
   - `productos` y `producto_defectos`;
-  - `ProductoFactory`, que valida los datos según el tipo de categoría y que capacidad y color sean de la categoría del modelo;
+  - `ProductoFactory`, que valida los datos según el tipo de categoría y que capacidad y color estén entre las opciones del modelo (sus asignados en `modelo_colores` / `modelo_capacidades` o, si no tiene, los de su categoría; reusar `CatalogoService.opciones_de_modelo`);
   - State `EstadoProducto`;
   - IMEI con Luhn y sin duplicados, y las validaciones de precio y costo;
   - `bateria_nivel`;
   - DTOs `ProductoReadVendedor` y `ProductoReadAdmin`.
 - **Frontend:**
   - listado de stock con filtros;
-  - alta y edición con campos que cambian según la categoría;
+  - alta y edición con campos que cambian según la categoría; color y capacidad se piden con `?modelo_id=` al elegir el modelo;
   - defectos, que se eligen de la lista o se escriben a mano;
   - color de batería.
 - **Resumen:** stock disponible y cuántas unidades son nuevas.

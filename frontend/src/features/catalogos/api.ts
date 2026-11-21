@@ -4,7 +4,7 @@ import { pedir, type Schemas } from "@/shared/api"
 export type ItemPorCatalogo = {
   "tipos-categoria": Schemas["TipoCategoriaRead"]
   categorias: Schemas["CategoriaRead"]
-  modelos: Schemas["ItemDeCategoriaRead"]
+  modelos: Schemas["ModeloRead"]
   capacidades: Schemas["ItemDeCategoriaRead"]
   colores: Schemas["ItemDeCategoriaRead"]
   proveedores: Schemas["ItemCatalogoRead"]
@@ -19,6 +19,10 @@ export type Slug = keyof ItemPorCatalogo
 export type ItemCatalogo = ItemPorCatalogo[Slug]
 export type TipoCategoria = ItemPorCatalogo["tipos-categoria"]
 export type Categoria = ItemPorCatalogo["categorias"]
+export type Modelo = ItemPorCatalogo["modelos"]
+
+/** Lo que un modelo elige de su categoría. */
+export type Asignable = "colores" | "capacidades"
 
 /** Lo que se manda al crear o editar. Cada catálogo valida su forma en la API. */
 export type DatosItem = Record<string, string | number | boolean>
@@ -42,4 +46,10 @@ export const catalogosApi = {
     }),
   eliminar: (slug: Slug, id: number) =>
     pedir<null>(`/catalogos/${slug}/${id}`, { method: "DELETE" }),
+  /** Reemplaza los colores o capacidades del modelo. Vacío: ofrece todos los de su categoría. */
+  asignar: (modeloId: number, que: Asignable, ids: number[]) =>
+    pedir<Modelo>(`/catalogos/modelos/${modeloId}/${que}`, {
+      method: "PUT",
+      body: { ids },
+    }),
 }

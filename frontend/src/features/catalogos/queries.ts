@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 
-import { catalogosApi, type DatosItem, type Slug } from "./api"
+import { catalogosApi, type Asignable, type DatosItem, type Slug } from "./api"
 
 export const catalogosKeys = {
   todo: ["catalogos"] as const,
@@ -52,5 +52,28 @@ export function useEliminarItem(slug: Slug) {
   return useMutation({
     mutationFn: (id: number) => catalogosApi.eliminar(slug, id),
     onSuccess: invalidar,
+  })
+}
+
+/** Guarda los colores y las capacidades de un modelo (solo lo que cambió). */
+export function useAsignarAModelo() {
+  const invalidar = useInvalidar("modelos")
+  return useMutation({
+    mutationFn: async ({
+      modeloId,
+      cambios,
+    }: {
+      modeloId: number
+      cambios: Partial<Record<Asignable, number[]>>
+    }) => {
+      for (const [que, ids] of Object.entries(cambios) as [
+        Asignable,
+        number[],
+      ][]) {
+        await catalogosApi.asignar(modeloId, que, ids)
+      }
+    },
+    // También si falla la segunda: la primera ya quedó guardada.
+    onSettled: invalidar,
   })
 }
