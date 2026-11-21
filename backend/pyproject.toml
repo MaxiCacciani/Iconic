@@ -1,0 +1,38 @@
+[project]
+name = "iconic-api"
+version = "0.1.0"
+description = "API REST de Iconic (FastAPI + SQLModel)"
+requires-python = ">=3.13,<3.14"
+dependencies = [
+    "fastapi[standard]>=0.162,<0.163",
+    "sqlmodel>=0.0.50",
+    "sqlalchemy>=2.1,<2.2",
+    "pydantic>=2.14,<3",
+    "pydantic-settings>=2.16",
+    "pyjwt>=2.15",
+    "pwdlib[argon2]>=0.4.2",
+    "boto3>=1.44",
+    "reportlab>=5.1",
+    "psycopg[binary]>=3.3",
+]
+
+[dependency-groups]
+dev = [
+    "httpx>=0.28",
+    "pytest>=9.2",
+    "ruff>=0.17",
+]
+
+[tool.uv]
+package = false
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]
+
+[tool.ruff]
+line-length = 100
+target-version = "py313"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B"]
