@@ -6,9 +6,15 @@ from pydantic import BaseModel
 from sqlalchemy.exc import IntegrityError
 from sqlmodel import SQLModel
 
-from app.core.excepciones import Conflicto, ErrorDeCampo, NoEncontrado
+from app.core.excepciones import Conflicto, ErrorDeCampo
 from app.core.uow import UnidadDeTrabajo
-from app.modules.catalogos.definiciones import Asignacion, Definicion
+from app.modules.catalogos.definiciones import (
+    ASIGNACION_POR_SLUG,
+    ASIGNACIONES,
+    TABLAS_DE_ASIGNACION,
+    Asignacion,
+    Definicion,
+)
 from app.modules.catalogos.models import Modelo
 from app.modules.catalogos.repository import CatalogoRepository
 
@@ -17,25 +23,34 @@ class CatalogoService:
     def __init__(self, uow: UnidadDeTrabajo, definicion: Definicion) -> None:
         self.uow = uow
         self.d = definicion
+        # Colores y capacidades: lo que un modelo elige de ellos.
+        self.asignacion = ASIGNACION_POR_SLUG.get(definicion.slug)
         self.repo = CatalogoRepository(
-            uow.session, definicion.modelo, definicion.campo_texto, definicion.ambito
+            uow.session,
+            definicion.modelo,
+            definicion.campo_texto,
+            definicion.ambito,
+            cargar=[a.slug for a in ASIGNACIONES] if definicion.con_asignaciones else (),
         )
 
     def listar(
         self, ambito_id: int | None = None, modelo_id: int | None = None
     ) -> Sequence[SQLModel]:
-        if self.d.por_modelo and modelo_id is not None:
+        if self.asignacion and modelo_id is not None:
+            if ambito_id is not None:
+                # El modelo ya define la categoría: con las dos, una podría contradecir a la otra.
+                raise ErrorDeCampo("modelo_id", "Pedí por categoría o por modelo, no por los dos.")
             return self.opciones_de_modelo(modelo_id)
         return self.repo.todos(ambito_id)
 
     def opciones_de_modelo(self, modelo_id: int) -> Sequence[SQLModel]:
         """Lo que se ofrece al cargar un producto de ese modelo: los colores (o capacidades)
         que tiene asignados o, si no tiene ninguno, todos los de su categoría."""
-        modelo = _modelo_o_falla(self.uow, modelo_id)
-        asignados = getattr(modelo, self.d.por_modelo)  # type: ignore[arg-type]
-        if not asignados:
-            return self.repo.todos(modelo.categoria_id)
-        return sorted(asignados, key=lambda e: self._texto(e).lower())
+        a = self.asignacion
+        assert a is not None
+        modelo = CatalogoRepository(self.uow.session, Modelo).obtener_o_falla(modelo_id)
+        asignados = self.repo.asignados(a.enlace, a.columna, modelo_id)
+        return asignados or self.repo.todos(modelo.categoria_id)
 
     def crear(self, datos: BaseModel) -> SQLModel:
         with self.uow:
@@ -72,16 +87,18 @@ class CatalogoService:
         self.uow.session.refresh(entidad)
         return entidad
 
-    def eliminar(self, id: int) -> None:
+    def eliminar(self, id: int) -> list[str]:
+        """Borra y devuelve lo que hay que avisar (modelos que se quedaron sin opciones)."""
         with self.uow:
             entidad = self.repo.obtener_o_falla(id)
             if self.d.marca and getattr(entidad, self.d.marca.campo):
                 raise Conflicto(self.d.marca.al_borrar)
-            usos = self.repo.usos(entidad)
+            usos = self.repo.usos(entidad, ignorar=TABLAS_DE_ASIGNACION)
             if usos:
                 partes = [f"{tabla} ({cantidad})" for tabla, cantidad in usos]
                 detalle = " y ".join(filter(None, [", ".join(partes[:-1]), partes[-1]]))
                 raise Conflicto(f"No se puede borrar «{self._texto(entidad)}»: lo usan {detalle}.")
+            avisos = self._avisos_al_borrar(entidad)
             try:
                 self.repo.eliminar(entidad)
             except IntegrityError:
@@ -89,6 +106,24 @@ class CatalogoService:
                 raise Conflicto(
                     f"No se puede borrar «{self._texto(entidad)}»: está en uso."
                 ) from None
+        return avisos
+
+    def _avisos_al_borrar(self, entidad: SQLModel) -> list[str]:
+        """Si era el único color (o capacidad) marcado de un modelo, ese modelo pasa a
+        ofrecer todos los de su categoría. Se deja borrar, pero se avisa."""
+        a = self.asignacion
+        if a is None:
+            return []
+        modelos = entidad.modelos  # type: ignore[attr-defined]
+        quedan_sin = sorted(
+            (m.nombre for m in modelos if len(getattr(m, a.slug)) == 1), key=str.lower
+        )
+        if not quedan_sin:
+            return []
+        nombres = [f"«{n}»" for n in quedan_sin]
+        lista = " y ".join(filter(None, [", ".join(nombres[:-1]), nombres[-1]]))
+        uno, varios = a.sin_opciones
+        return [(uno if len(nombres) == 1 else varios).format(lista)]
 
     # ─── Reglas comunes ──────────────────────────────────────────────────────
     def _texto(self, entidad: SQLModel) -> str:
@@ -116,35 +151,33 @@ class CatalogoService:
                 self.repo.actualizar(otra)
 
 
-def _modelo_o_falla(uow: UnidadDeTrabajo, modelo_id: int) -> Modelo:
-    modelo = uow.session.get(Modelo, modelo_id)
-    if modelo is None:
-        raise NoEncontrado(f"Modelo #{modelo_id} no existe")
-    return modelo
-
-
 class AsignacionService:
-    """Qué colores o capacidades de su categoría tiene un modelo."""
+    """Qué colores y capacidades de su categoría tiene un modelo."""
 
-    def __init__(self, uow: UnidadDeTrabajo, asignacion: Asignacion) -> None:
+    def __init__(self, uow: UnidadDeTrabajo) -> None:
         self.uow = uow
-        self.a = asignacion
+        self.modelos = CatalogoRepository(uow.session, Modelo)
 
-    def asignar(self, modelo_id: int, ids: list[int]) -> Modelo:
-        """Reemplaza la lista completa. Vacía, el modelo vuelve a ofrecer todos."""
+    def asignar(self, modelo_id: int, cambios: dict[str, list[int]]) -> Modelo:
+        """`cambios`: por campo (`color_ids`, `capacidad_ids`), la lista completa nueva.
+        Vacía, el modelo vuelve a ofrecer todos. Se guarda todo junto o nada."""
         with self.uow:
-            modelo = _modelo_o_falla(self.uow, modelo_id)
-            elegidos = []
-            for id in dict.fromkeys(ids):  # sin repetidos, en el orden en que llegaron
-                item = self.uow.session.get(self.a.modelo, id)
-                if item is None:
-                    raise ErrorDeCampo("ids", self.a.no_existe)
-                # La categoría de un modelo, color o capacidad no cambia, así que esto
-                # alcanza para que la asignación siga siendo válida.
-                if item.categoria_id != modelo.categoria_id:  # type: ignore[attr-defined]
-                    raise ErrorDeCampo("ids", self.a.otra_categoria.format(item.nombre))  # type: ignore[attr-defined]
-                elegidos.append(item)
-            setattr(modelo, self.a.relacion, elegidos)
+            modelo = self.modelos.obtener_o_falla(modelo_id)
+            for a in ASIGNACIONES:
+                if a.campo in cambios:
+                    setattr(modelo, a.slug, self._validados(a, modelo, cambios[a.campo]))
             self.uow.session.add(modelo)
         self.uow.session.refresh(modelo)
         return modelo
+
+    def _validados(self, a: Asignacion, modelo: Modelo, ids: list[int]) -> list[SQLModel]:
+        pedidos = set(ids)
+        items = CatalogoRepository(self.uow.session, a.modelo).por_ids(pedidos)
+        if len(items) != len(pedidos):
+            raise ErrorDeCampo(a.campo, a.no_existe)
+        # La categoría de un modelo, color o capacidad no cambia, así que esto alcanza
+        # para que la asignación siga siendo válida.
+        for item in sorted(items, key=lambda i: i.id):  # type: ignore[attr-defined]
+            if item.categoria_id != modelo.categoria_id:  # type: ignore[attr-defined]
+                raise ErrorDeCampo(a.campo, a.otra_categoria.format(item.nombre))  # type: ignore[attr-defined]
+        return list(items)

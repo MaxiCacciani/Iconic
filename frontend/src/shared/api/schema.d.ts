@@ -73,6 +73,23 @@ export interface paths {
     patch: operations["actualizar_usuarios__usuario_id__patch"]
     trace?: never
   }
+  "/catalogos/modelos/{item_id}/asignaciones": {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    /** Asignar */
+    put: operations["asignar_colores_y_capacidades"]
+    post?: never
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
   "/catalogos/tipos-categoria": {
     parameters: {
       query?: never
@@ -469,40 +486,6 @@ export interface paths {
     patch: operations["actualizar_metodos_pago"]
     trace?: never
   }
-  "/catalogos/modelos/{item_id}/colores": {
-    parameters: {
-      query?: never
-      header?: never
-      path?: never
-      cookie?: never
-    }
-    get?: never
-    /** Asignar */
-    put: operations["asignar_colores_a_modelo"]
-    post?: never
-    delete?: never
-    options?: never
-    head?: never
-    patch?: never
-    trace?: never
-  }
-  "/catalogos/modelos/{item_id}/capacidades": {
-    parameters: {
-      query?: never
-      header?: never
-      path?: never
-      cookie?: never
-    }
-    get?: never
-    /** Asignar */
-    put: operations["asignar_capacidades_a_modelo"]
-    post?: never
-    delete?: never
-    options?: never
-    head?: never
-    patch?: never
-    trace?: never
-  }
   "/tipo-cambio/hoy": {
     parameters: {
       query?: never
@@ -560,18 +543,30 @@ export type webhooks = Record<string, never>
 export interface components {
   schemas: {
     /**
-     * AsignacionUpdate
-     * @description Reemplaza la lista completa. Vacía: el modelo vuelve a ofrecer todos.
+     * AsignacionesUpdate
+     * @description Cada lista reemplaza la que el modelo tenía; vacía, vuelve a ofrecer todos.
+     *     La que no se manda queda como estaba. Se guardan las dos juntas o ninguna.
      */
-    AsignacionUpdate: {
-      /** Ids */
-      ids: number[]
+    AsignacionesUpdate: {
+      /** Color Ids */
+      color_ids?: number[] | null
+      /** Capacidad Ids */
+      capacidad_ids?: number[] | null
     }
     /** AvisoRead */
     AvisoRead: {
       tipo: components["schemas"]["TipoAviso"]
       /** Mensaje */
       mensaje: string
+    }
+    /**
+     * BorradoRead
+     * @description Lo que hay que avisar después de borrar (por ejemplo, un modelo que se quedó sin
+     *     colores marcados y ahora ofrece todos).
+     */
+    BorradoRead: {
+      /** Avisos */
+      avisos: string[]
     }
     /** CategoriaCreate */
     CategoriaCreate: {
@@ -1067,6 +1062,41 @@ export interface operations {
       }
     }
   }
+  asignar_colores_y_capacidades: {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        item_id: number
+      }
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["AsignacionesUpdate"]
+      }
+    }
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          "application/json": components["schemas"]["ModeloRead"]
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"]
+        }
+      }
+    }
+  }
   listar_tipos_categoria: {
     parameters: {
       query?: never
@@ -1083,6 +1113,15 @@ export interface operations {
         }
         content: {
           "application/json": components["schemas"]["TipoCategoriaRead"][]
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"]
         }
       }
     }
@@ -1132,11 +1171,13 @@ export interface operations {
     requestBody?: never
     responses: {
       /** @description Successful Response */
-      204: {
+      200: {
         headers: {
           [name: string]: unknown
         }
-        content?: never
+        content: {
+          "application/json": components["schemas"]["BorradoRead"]
+        }
       }
       /** @description Validation Error */
       422: {
@@ -1202,6 +1243,15 @@ export interface operations {
           "application/json": components["schemas"]["CategoriaRead"][]
         }
       }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"]
+        }
+      }
     }
   }
   crear_categorias: {
@@ -1249,11 +1299,13 @@ export interface operations {
     requestBody?: never
     responses: {
       /** @description Successful Response */
-      204: {
+      200: {
         headers: {
           [name: string]: unknown
         }
-        content?: never
+        content: {
+          "application/json": components["schemas"]["BorradoRead"]
+        }
       }
       /** @description Validation Error */
       422: {
@@ -1378,11 +1430,13 @@ export interface operations {
     requestBody?: never
     responses: {
       /** @description Successful Response */
-      204: {
+      200: {
         headers: {
           [name: string]: unknown
         }
-        content?: never
+        content: {
+          "application/json": components["schemas"]["BorradoRead"]
+        }
       }
       /** @description Validation Error */
       422: {
@@ -1435,7 +1489,7 @@ export interface operations {
       query?: {
         /** @description Solo de esa categoría */
         categoria_id?: number | null
-        /** @description Las opciones de ese modelo: sus asignados o, si no tiene, todos los de su categoría */
+        /** @description Las opciones de ese modelo: sus asignados o, si no tiene, todos los de su categoría. No se combina con `categoria_id`. */
         modelo_id?: number | null
       }
       header?: never
@@ -1509,11 +1563,13 @@ export interface operations {
     requestBody?: never
     responses: {
       /** @description Successful Response */
-      204: {
+      200: {
         headers: {
           [name: string]: unknown
         }
-        content?: never
+        content: {
+          "application/json": components["schemas"]["BorradoRead"]
+        }
       }
       /** @description Validation Error */
       422: {
@@ -1566,7 +1622,7 @@ export interface operations {
       query?: {
         /** @description Solo de esa categoría */
         categoria_id?: number | null
-        /** @description Las opciones de ese modelo: sus asignados o, si no tiene, todos los de su categoría */
+        /** @description Las opciones de ese modelo: sus asignados o, si no tiene, todos los de su categoría. No se combina con `categoria_id`. */
         modelo_id?: number | null
       }
       header?: never
@@ -1640,11 +1696,13 @@ export interface operations {
     requestBody?: never
     responses: {
       /** @description Successful Response */
-      204: {
+      200: {
         headers: {
           [name: string]: unknown
         }
-        content?: never
+        content: {
+          "application/json": components["schemas"]["BorradoRead"]
+        }
       }
       /** @description Validation Error */
       422: {
@@ -1710,6 +1768,15 @@ export interface operations {
           "application/json": components["schemas"]["ItemCatalogoRead"][]
         }
       }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"]
+        }
+      }
     }
   }
   crear_proveedores: {
@@ -1757,11 +1824,13 @@ export interface operations {
     requestBody?: never
     responses: {
       /** @description Successful Response */
-      204: {
+      200: {
         headers: {
           [name: string]: unknown
         }
-        content?: never
+        content: {
+          "application/json": components["schemas"]["BorradoRead"]
+        }
       }
       /** @description Validation Error */
       422: {
@@ -1827,6 +1896,15 @@ export interface operations {
           "application/json": components["schemas"]["DefectoRead"][]
         }
       }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"]
+        }
+      }
     }
   }
   crear_defectos: {
@@ -1874,11 +1952,13 @@ export interface operations {
     requestBody?: never
     responses: {
       /** @description Successful Response */
-      204: {
+      200: {
         headers: {
           [name: string]: unknown
         }
-        content?: never
+        content: {
+          "application/json": components["schemas"]["BorradoRead"]
+        }
       }
       /** @description Validation Error */
       422: {
@@ -1944,6 +2024,15 @@ export interface operations {
           "application/json": components["schemas"]["ItemCatalogoRead"][]
         }
       }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"]
+        }
+      }
     }
   }
   crear_localidades: {
@@ -1991,11 +2080,13 @@ export interface operations {
     requestBody?: never
     responses: {
       /** @description Successful Response */
-      204: {
+      200: {
         headers: {
           [name: string]: unknown
         }
-        content?: never
+        content: {
+          "application/json": components["schemas"]["BorradoRead"]
+        }
       }
       /** @description Validation Error */
       422: {
@@ -2061,6 +2152,15 @@ export interface operations {
           "application/json": components["schemas"]["ItemCatalogoRead"][]
         }
       }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"]
+        }
+      }
     }
   }
   crear_diagnosticos: {
@@ -2108,11 +2208,13 @@ export interface operations {
     requestBody?: never
     responses: {
       /** @description Successful Response */
-      204: {
+      200: {
         headers: {
           [name: string]: unknown
         }
-        content?: never
+        content: {
+          "application/json": components["schemas"]["BorradoRead"]
+        }
       }
       /** @description Validation Error */
       422: {
@@ -2178,6 +2280,15 @@ export interface operations {
           "application/json": components["schemas"]["EstadoReclamoRead"][]
         }
       }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"]
+        }
+      }
     }
   }
   crear_estados_reclamo: {
@@ -2225,11 +2336,13 @@ export interface operations {
     requestBody?: never
     responses: {
       /** @description Successful Response */
-      204: {
+      200: {
         headers: {
           [name: string]: unknown
         }
-        content?: never
+        content: {
+          "application/json": components["schemas"]["BorradoRead"]
+        }
       }
       /** @description Validation Error */
       422: {
@@ -2295,6 +2408,15 @@ export interface operations {
           "application/json": components["schemas"]["MetodoPagoRead"][]
         }
       }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"]
+        }
+      }
     }
   }
   crear_metodos_pago: {
@@ -2342,11 +2464,13 @@ export interface operations {
     requestBody?: never
     responses: {
       /** @description Successful Response */
-      204: {
+      200: {
         headers: {
           [name: string]: unknown
         }
-        content?: never
+        content: {
+          "application/json": components["schemas"]["BorradoRead"]
+        }
       }
       /** @description Validation Error */
       422: {
@@ -2381,76 +2505,6 @@ export interface operations {
         }
         content: {
           "application/json": components["schemas"]["MetodoPagoRead"]
-        }
-      }
-      /** @description Validation Error */
-      422: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          "application/json": components["schemas"]["HTTPValidationError"]
-        }
-      }
-    }
-  }
-  asignar_colores_a_modelo: {
-    parameters: {
-      query?: never
-      header?: never
-      path: {
-        item_id: number
-      }
-      cookie?: never
-    }
-    requestBody: {
-      content: {
-        "application/json": components["schemas"]["AsignacionUpdate"]
-      }
-    }
-    responses: {
-      /** @description Successful Response */
-      200: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          "application/json": components["schemas"]["ModeloRead"]
-        }
-      }
-      /** @description Validation Error */
-      422: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          "application/json": components["schemas"]["HTTPValidationError"]
-        }
-      }
-    }
-  }
-  asignar_capacidades_a_modelo: {
-    parameters: {
-      query?: never
-      header?: never
-      path: {
-        item_id: number
-      }
-      cookie?: never
-    }
-    requestBody: {
-      content: {
-        "application/json": components["schemas"]["AsignacionUpdate"]
-      }
-    }
-    responses: {
-      /** @description Successful Response */
-      200: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          "application/json": components["schemas"]["ModeloRead"]
         }
       }
       /** @description Validation Error */

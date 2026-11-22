@@ -55,10 +55,19 @@ class ModeloRead(ItemDeCategoriaRead):
     capacidad_ids: list[int]
 
 
-class AsignacionUpdate(BaseModel):
-    """Reemplaza la lista completa. Vacía: el modelo vuelve a ofrecer todos."""
+class AsignacionesUpdate(BaseModel):
+    """Cada lista reemplaza la que el modelo tenía; vacía, vuelve a ofrecer todos.
+    La que no se manda queda como estaba. Se guardan las dos juntas o ninguna."""
 
-    ids: list[int]
+    color_ids: list[int] | None = None
+    capacidad_ids: list[int] | None = None
+
+
+class BorradoRead(BaseModel):
+    """Lo que hay que avisar después de borrar (por ejemplo, un modelo que se quedó sin
+    colores marcados y ahora ofrece todos)."""
+
+    avisos: list[str]
 
 
 # ─── Tipos de categoría ───────────────────────────────────────────────────────

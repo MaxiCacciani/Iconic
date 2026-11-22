@@ -4,7 +4,9 @@ El ABMC es el mismo para todos (`service.py`, `router.py`); acá se declara lo q
 el campo de texto, si se agrupa por categoría, a qué otra tabla apunta y si tiene un
 valor que tiene que ser único (el método de pago predeterminado, el estado inicial).
 
-`ASIGNACIONES` declara lo que cada modelo elige de su categoría: colores y capacidades.
+`ASIGNACIONES` declara lo que cada modelo elige de su categoría (colores y capacidades).
+Es la única lista: de ahí salen el `?modelo_id=` de esos catálogos, el
+`PUT /catalogos/modelos/{id}/asignaciones` y qué tablas no frenan un borrado.
 """
 
 from collections.abc import Callable
@@ -25,6 +27,8 @@ from app.modules.catalogos.models import (
     Localidad,
     MetodoPago,
     Modelo,
+    ModeloCapacidad,
+    ModeloColor,
     Proveedor,
     TipoCategoria,
 )
@@ -62,21 +66,30 @@ class Definicion:
     referencias: dict[str, Referencia] = field(default_factory=dict)
     marca: Marca | None = None
     validar: Callable[[SQLModel], None] | None = None
-    por_modelo: str | None = None
-    """Colores y capacidades: el atributo de `Modelo` con los asignados. Permite listar
-    las opciones de un modelo (`?modelo_id=`)."""
+    con_asignaciones: bool = False
+    """Modelos: al listarlos se cargan sus colores y capacidades (ver `ASIGNACIONES`)."""
 
 
 @dataclass(frozen=True)
 class Asignacion:
-    """Lo que un modelo elige de su categoría. `relacion` es el atributo de `Modelo` y el
-    tramo final de la URL (`/catalogos/modelos/{id}/colores`)."""
+    """Lo que un modelo elige de su categoría.
 
-    relacion: str
+    `slug` es a la vez el catálogo (`colores`) y el atributo de `Modelo` con los asignados.
+    `enlace` es la tabla intermedia y `columna`, su clave hacia el catálogo.
+    `campo` es la lista de ids en `ModeloRead` y en `AsignacionesUpdate`.
+    """
+
+    slug: str
     modelo: type[SQLModel]
+    enlace: type[SQLModel]
+    columna: str
+    campo: str
     no_existe: str
     otra_categoria: str
-    """Con `{}` para el nombre: "«Verde alpino» no es de la categoría del modelo"."""
+    """Con `{}` para el nombre: "«Verde alpino» no es un color de la categoría del modelo"."""
+    sin_opciones: tuple[str, str]
+    """Aviso al borrar el último asignado de un modelo, en singular y en plural, con `{}`
+    para los nombres de los modelos."""
 
 
 def _validar_tipo_categoria(tipo: SQLModel) -> None:
@@ -126,6 +139,7 @@ DEFINICIONES: list[Definicion] = [
         repetido="Esta categoría ya tiene un modelo con ese nombre.",
         ambito="categoria_id",
         referencias={"categoria_id": _CATEGORIA},
+        con_asignaciones=True,
     ),
     Definicion(
         slug="capacidades",
@@ -137,7 +151,6 @@ DEFINICIONES: list[Definicion] = [
         repetido="Esta categoría ya tiene esa capacidad.",
         ambito="categoria_id",
         referencias={"categoria_id": _CATEGORIA},
-        por_modelo="capacidades",
     ),
     Definicion(
         slug="colores",
@@ -149,7 +162,6 @@ DEFINICIONES: list[Definicion] = [
         repetido="Esta categoría ya tiene ese color.",
         ambito="categoria_id",
         referencias={"categoria_id": _CATEGORIA},
-        por_modelo="colores",
     ),
     Definicion(
         slug="proveedores",
@@ -222,15 +234,34 @@ POR_SLUG = {d.slug: d for d in DEFINICIONES}
 
 ASIGNACIONES: list[Asignacion] = [
     Asignacion(
-        relacion="colores",
+        slug="colores",
         modelo=Color,
+        enlace=ModeloColor,
+        columna="color_id",
+        campo="color_ids",
         no_existe="Uno de los colores no existe.",
         otra_categoria="«{}» no es un color de la categoría del modelo.",
+        sin_opciones=(
+            "{} se quedó sin colores marcados: ahora ofrece todos los de su categoría.",
+            "{} se quedaron sin colores marcados: ahora ofrecen todos los de su categoría.",
+        ),
     ),
     Asignacion(
-        relacion="capacidades",
+        slug="capacidades",
         modelo=Capacidad,
+        enlace=ModeloCapacidad,
+        columna="capacidad_id",
+        campo="capacidad_ids",
         no_existe="Una de las capacidades no existe.",
         otra_categoria="«{}» no es una capacidad de la categoría del modelo.",
+        sin_opciones=(
+            "{} se quedó sin capacidades marcadas: ahora ofrece todas las de su categoría.",
+            "{} se quedaron sin capacidades marcadas: ahora ofrecen todas las de su categoría.",
+        ),
     ),
 ]
+
+ASIGNACION_POR_SLUG = {a.slug: a for a in ASIGNACIONES}
+
+TABLAS_DE_ASIGNACION = frozenset(a.enlace.__tablename__ for a in ASIGNACIONES)  # type: ignore[attr-defined]
+"""Las asignaciones no cuentan como "en uso": se borran con el color o el modelo."""

@@ -1,6 +1,11 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 
-import { catalogosApi, type Asignable, type DatosItem, type Slug } from "./api"
+import {
+  catalogosApi,
+  type Asignaciones,
+  type DatosItem,
+  type Slug,
+} from "./api"
 
 export const catalogosKeys = {
   todo: ["catalogos"] as const,
@@ -48,32 +53,26 @@ export function useActualizarItem(slug: Slug) {
 }
 
 export function useEliminarItem(slug: Slug) {
-  const invalidar = useInvalidar(slug)
+  const queryClient = useQueryClient()
   return useMutation({
     mutationFn: (id: number) => catalogosApi.eliminar(slug, id),
-    onSuccess: invalidar,
+    // Borrar un color o una capacidad también cambia los modelos que lo tenían marcado.
+    onSuccess: () =>
+      queryClient.invalidateQueries({ queryKey: catalogosKeys.todo }),
   })
 }
 
-/** Guarda los colores y las capacidades de un modelo (solo lo que cambió). */
+/** Guarda los colores y las capacidades de un modelo, en una sola operación. */
 export function useAsignarAModelo() {
   const invalidar = useInvalidar("modelos")
   return useMutation({
-    mutationFn: async ({
+    mutationFn: ({
       modeloId,
       cambios,
     }: {
       modeloId: number
-      cambios: Partial<Record<Asignable, number[]>>
-    }) => {
-      for (const [que, ids] of Object.entries(cambios) as [
-        Asignable,
-        number[],
-      ][]) {
-        await catalogosApi.asignar(modeloId, que, ids)
-      }
-    },
-    // También si falla la segunda: la primera ya quedó guardada.
-    onSettled: invalidar,
+      cambios: Asignaciones
+    }) => catalogosApi.asignar(modeloId, cambios),
+    onSuccess: invalidar,
   })
 }

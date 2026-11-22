@@ -9,6 +9,7 @@ import { Checkbox } from "@/shared/ui/checkbox"
 import {
   Field,
   FieldDescription,
+  FieldError,
   FieldGroup,
   FieldLabel,
   FieldLegend,
@@ -26,7 +27,7 @@ import {
 import { Skeleton } from "@/shared/ui/skeleton"
 import { Spinner } from "@/shared/ui/spinner"
 
-import type { Asignable, Modelo } from "../api"
+import type { Asignaciones, Modelo } from "../api"
 import { useAsignarAModelo, useCatalogoQuery } from "../queries"
 
 type Props = {
@@ -40,7 +41,9 @@ type Props = {
 }
 
 const FORM_ID = "form-asignaciones"
-const ASIGNABLES = ["colores", "capacidades"] as const
+type Asignable = "colores" | "capacidades"
+/** El campo de cada lista en `ModeloRead` y en lo que se manda. */
+const CAMPO = { colores: "color_ids", capacidades: "capacidad_ids" } as const
 
 /** Qué colores y capacidades de su categoría tiene un modelo. */
 export function AsignacionesSheet({
@@ -98,10 +101,10 @@ function Contenido({
 
   function enviar(evento: FormEvent<HTMLFormElement>) {
     evento.preventDefault()
-    const cambios: Partial<Record<Asignable, number[]>> = {}
-    for (const que of ASIGNABLES) {
+    const cambios: Asignaciones = {}
+    for (const que of ["colores", "capacidades"] as const) {
       const ids = [...elegidos[que]].toSorted((a, b) => a - b)
-      if (ids.join() !== guardados[que].join()) cambios[que] = ids
+      if (ids.join() !== guardados[que].join()) cambios[CAMPO[que]] = ids
     }
     if (Object.keys(cambios).length === 0) {
       onCerrar()
@@ -120,12 +123,12 @@ function Contenido({
     )
   }
 
+  // Un 422 viene por lista (`color_ids`, `capacidad_ids`) y se muestra en su grupo.
+  const campos = asignar.error instanceof ApiError ? asignar.error.campos : {}
   const error =
-    asignar.error instanceof ApiError
-      ? (asignar.error.campos.ids ?? asignar.error.message)
-      : asignar.error
-        ? mensajeDeError(asignar.error)
-        : null
+    asignar.error && Object.keys(campos).length === 0
+      ? mensajeDeError(asignar.error)
+      : null
   const deLaCategoria = categoria ?? "Esta categoría"
 
   return (
@@ -154,6 +157,7 @@ function Contenido({
             vacio={`${deLaCategoria} todavía no tiene colores. Agregalos en el catálogo Colores.`}
             consulta={colores}
             elegidos={elegidos.colores}
+            error={campos[CAMPO.colores]}
             onAlternar={(id, marcado) => alternar("colores", id, marcado)}
           />
           <Grupo
@@ -162,6 +166,7 @@ function Contenido({
             vacio={`${deLaCategoria} todavía no tiene capacidades. Agregalas en el catálogo Capacidades.`}
             consulta={capacidades}
             elegidos={elegidos.capacidades}
+            error={campos[CAMPO.capacidades]}
             onAlternar={(id, marcado) => alternar("capacidades", id, marcado)}
           />
 
@@ -193,6 +198,7 @@ type GrupoProps = {
   vacio: string
   consulta: ReturnType<typeof useCatalogoQuery<"colores">>
   elegidos: Set<number>
+  error?: string
   onAlternar: (id: number, marcado: boolean) => void
 }
 
@@ -202,14 +208,16 @@ function Grupo({
   vacio,
   consulta,
   elegidos,
+  error,
   onAlternar,
 }: GrupoProps) {
   const items = consulta.data
   const id = `asignar-${titulo.toLowerCase()}`
 
   return (
-    <FieldSet>
+    <FieldSet data-invalid={error ? true : undefined}>
       <FieldLegend variant="label">{titulo}</FieldLegend>
+      {error && <FieldError>{error}</FieldError>}
       {consulta.isError ? (
         <FieldDescription>
           No se pudo cargar la lista: {mensajeDeError(consulta.error)}

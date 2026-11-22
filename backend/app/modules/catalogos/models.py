@@ -62,15 +62,10 @@ class Modelo(SQLModel, table=True):
     categoria_id: int = Field(foreign_key="categorias.id")
     nombre: str
 
-    colores: list["Color"] = Relationship(
-        back_populates="modelos",
-        link_model=ModeloColor,
-        sa_relationship_kwargs={"lazy": "selectin"},
-    )
+    # Se cargan cuando se usan; el listado de modelos los trae juntos (`selectinload`).
+    colores: list["Color"] = Relationship(back_populates="modelos", link_model=ModeloColor)
     capacidades: list["Capacidad"] = Relationship(
-        back_populates="modelos",
-        link_model=ModeloCapacidad,
-        sa_relationship_kwargs={"lazy": "selectin"},
+        back_populates="modelos", link_model=ModeloCapacidad
     )
 
     @property

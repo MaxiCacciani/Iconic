@@ -21,8 +21,8 @@ export type TipoCategoria = ItemPorCatalogo["tipos-categoria"]
 export type Categoria = ItemPorCatalogo["categorias"]
 export type Modelo = ItemPorCatalogo["modelos"]
 
-/** Lo que un modelo elige de su categoría. */
-export type Asignable = "colores" | "capacidades"
+/** Las listas que se mandan a la vez: la que no va, queda como estaba. */
+export type Asignaciones = Schemas["AsignacionesUpdate"]
 
 /** Lo que se manda al crear o editar. Cada catálogo valida su forma en la API. */
 export type DatosItem = Record<string, string | number | boolean>
@@ -44,12 +44,15 @@ export const catalogosApi = {
       method: "PATCH",
       body: cambios,
     }),
+  /** Devuelve los avisos del borrado (un modelo que se quedó sin colores marcados). */
   eliminar: (slug: Slug, id: number) =>
-    pedir<null>(`/catalogos/${slug}/${id}`, { method: "DELETE" }),
-  /** Reemplaza los colores o capacidades del modelo. Vacío: ofrece todos los de su categoría. */
-  asignar: (modeloId: number, que: Asignable, ids: number[]) =>
-    pedir<Modelo>(`/catalogos/modelos/${modeloId}/${que}`, {
+    pedir<Schemas["BorradoRead"]>(`/catalogos/${slug}/${id}`, {
+      method: "DELETE",
+    }),
+  /** Guarda los colores y las capacidades del modelo juntos: se graban los dos o ninguno. */
+  asignar: (modeloId: number, cambios: Asignaciones) =>
+    pedir<Modelo>(`/catalogos/modelos/${modeloId}/asignaciones`, {
       method: "PUT",
-      body: { ids },
+      body: cambios,
     }),
 }

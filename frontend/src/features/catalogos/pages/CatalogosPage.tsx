@@ -59,6 +59,15 @@ export function CatalogosPage() {
   const [asignando, setAsignando] = useState<{ id: number; apertura: number }>()
   const [asignacionAbierta, setAsignacionAbierta] = useState(false)
 
+  // Al cambiar de catálogo (también con atrás y adelante del navegador) se cierran los
+  // paneles, así no reaparecen solos al volver. Se ajusta durante el render, sin efecto.
+  const [catalogoVisto, setCatalogoVisto] = useState(d.slug)
+  if (catalogoVisto !== d.slug) {
+    setCatalogoVisto(d.slug)
+    setSheetAbierto(false)
+    setAsignacionAbierta(false)
+  }
+
   const nombresCategoria = useMemo(
     () => new Map(categorias.data?.map((c) => [c.id, c.nombre])),
     [categorias.data]
@@ -77,7 +86,6 @@ export function CatalogosPage() {
 
   function elegirCatalogo(slug: Slug) {
     setParams({ lista: slug })
-    setSheetAbierto(false)
   }
 
   function elegirCategoria(valor: string) {
@@ -107,7 +115,10 @@ export function CatalogosPage() {
   function borrar(item: ItemCatalogo) {
     setABorrar(null)
     eliminar.mutate(item.id, {
-      onSuccess: () => toast.success(`Se borró «${texto(item)}».`),
+      onSuccess: ({ avisos }) => {
+        toast.success(`Se borró «${texto(item)}».`)
+        for (const aviso of avisos) toast.warning(aviso, { duration: 10_000 })
+      },
       // Si está en uso, la API responde 409 con qué lo usa.
       onError: (error) => toast.error(mensajeDeError(error)),
     })

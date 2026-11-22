@@ -109,7 +109,8 @@ def test_alta_edicion_y_baja(client, admin):
     r = client.patch(url, json={"nombre": "Funes"}, headers=h)
     assert r.status_code == 200 and r.json()["nombre"] == "Funes"
 
-    assert client.delete(f"/catalogos/localidades/{localidad['id']}", headers=h).status_code == 204
+    r = client.delete(f"/catalogos/localidades/{localidad['id']}", headers=h)
+    assert r.status_code == 200 and r.json() == {"avisos": []}
     assert client.get("/catalogos/localidades", headers=h).json() == []
     assert client.patch("/catalogos/localidades/999", json={}, headers=h).status_code == 404
 
@@ -203,7 +204,7 @@ def test_no_se_borra_lo_que_esta_en_uso(client, admin):
     assert r.json()["detail"] == "No se puede borrar «iPhone»: lo usan colores (1) y modelos (1)."
 
     otro = _categoria(client, admin, "Otro accesorio")
-    assert client.delete(f"/catalogos/categorias/{otro}", headers=h).status_code == 204
+    assert client.delete(f"/catalogos/categorias/{otro}", headers=h).status_code == 200
 
 
 # ─── Tipos de categoría ──────────────────────────────────────────────────────
@@ -300,9 +301,19 @@ def _opciones(client, h, slug: str, modelo: int) -> list[str]:
     return [x["nombre"] for x in r.json()]
 
 
+def _asignar(client, d, **listas):
+    return client.put(f"/catalogos/modelos/{d['modelo']}/asignaciones", json=listas, headers=d["h"])
+
+
+def _modelo(client, d) -> dict:
+    return next(
+        m for m in client.get("/catalogos/modelos", headers=d["h"]).json() if m["id"] == d["modelo"]
+    )
+
+
 def test_modelo_sin_asignar_ofrece_todos_los_de_la_categoria(client, iphone_15):
     d = iphone_15
-    modelo = client.get("/catalogos/modelos", headers=d["h"]).json()[0]
+    modelo = _modelo(client, d)
     assert modelo["color_ids"] == [] and modelo["capacidad_ids"] == []
     assert _opciones(client, d["h"], "colores", d["modelo"]) == ["Negro", "Rosa", "Verde alpino"]
     assert _opciones(client, d["h"], "capacidades", d["modelo"]) == ["128 GB", "64 GB"]
@@ -310,43 +321,46 @@ def test_modelo_sin_asignar_ofrece_todos_los_de_la_categoria(client, iphone_15):
 
 def test_asignar_colores_y_capacidades(client, iphone_15):
     d = iphone_15
-    url = f"/catalogos/modelos/{d['modelo']}"
-    r = client.put(
-        f"{url}/colores", json={"ids": [d["rosa"], d["negro"], d["rosa"]]}, headers=d["h"]
-    )
+    r = _asignar(client, d, color_ids=[d["rosa"], d["negro"], d["rosa"]], capacidad_ids=[d["128"]])
     assert r.status_code == 200, r.text
     assert r.json()["color_ids"] == sorted([d["rosa"], d["negro"]])
-    r = client.put(f"{url}/capacidades", json={"ids": [d["128"]]}, headers=d["h"])
     assert r.json()["capacidad_ids"] == [d["128"]]
-    # Asignar capacidades no toca los colores.
-    assert r.json()["color_ids"] == sorted([d["rosa"], d["negro"]])
-
     assert _opciones(client, d["h"], "colores", d["modelo"]) == ["Negro", "Rosa"]
     assert _opciones(client, d["h"], "capacidades", d["modelo"]) == ["128 GB"]
 
-    # Vaciar la lista vuelve a ofrecer todos.
-    r = client.put(f"{url}/colores", json={"ids": []}, headers=d["h"])
-    assert r.json()["color_ids"] == []
+    # La lista que no se manda queda como estaba; vaciar una vuelve a ofrecer todos.
+    r = _asignar(client, d, color_ids=[])
+    assert r.json()["color_ids"] == [] and r.json()["capacidad_ids"] == [d["128"]]
     assert len(_opciones(client, d["h"], "colores", d["modelo"])) == 3
 
 
-def test_no_se_asigna_un_color_de_otra_categoria(client, admin, iphone_15):
+def test_asignar_es_todo_o_nada(client, admin, iphone_15):
     d = iphone_15
     ipad = _categoria(client, admin, "iPad")
     azul = _crear(client, d["h"], "colores", ipad, "Azul cielo")
-    url = f"/catalogos/modelos/{d['modelo']}"
 
-    r = client.put(f"{url}/colores", json={"ids": [d["rosa"], azul]}, headers=d["h"])
-    assert _errores(r) == {"ids": "«Azul cielo» no es un color de la categoría del modelo."}
-    r = client.put(f"{url}/capacidades", json={"ids": [999]}, headers=d["h"])
-    assert _errores(r) == {"ids": "Una de las capacidades no existe."}
-    # Nada quedó a medias.
-    assert client.get("/catalogos/modelos", headers=d["h"]).json()[0]["color_ids"] == []
+    r = _asignar(client, d, color_ids=[d["rosa"]], capacidad_ids=[999])
+    assert _errores(r) == {"capacidad_ids": "Una de las capacidades no existe."}
+    r = _asignar(client, d, capacidad_ids=[d["128"]], color_ids=[d["rosa"], azul])
+    assert _errores(r) == {"color_ids": "«Azul cielo» no es un color de la categoría del modelo."}
+    # Ni los colores del primer intento ni las capacidades del segundo quedaron guardados.
+    modelo = _modelo(client, d)
+    assert modelo["color_ids"] == [] and modelo["capacidad_ids"] == []
+
+
+def test_opciones_por_categoria_o_por_modelo_no_las_dos(client, iphone_15):
+    d = iphone_15
+    r = client.get(
+        "/catalogos/colores",
+        params={"modelo_id": d["modelo"], "categoria_id": d["categoria"]},
+        headers=d["h"],
+    )
+    assert _errores(r) == {"modelo_id": "Pedí por categoría o por modelo, no por los dos."}
 
 
 def test_modelo_inexistente(client, iphone_15):
     d = iphone_15
-    r = client.put("/catalogos/modelos/999/colores", json={"ids": []}, headers=d["h"])
+    r = client.put("/catalogos/modelos/999/asignaciones", json={"color_ids": []}, headers=d["h"])
     assert r.status_code == 404
     r = client.get("/catalogos/colores", params={"modelo_id": 999}, headers=d["h"])
     assert r.status_code == 404
@@ -356,20 +370,45 @@ def test_vendedor_ve_las_opciones_pero_no_asigna(client, vendedor, iphone_15):
     d = iphone_15
     hv = auth_header(vendedor)
     assert len(_opciones(client, hv, "colores", d["modelo"])) == 3
-    r = client.put(f"/catalogos/modelos/{d['modelo']}/colores", json={"ids": []}, headers=hv)
+    r = client.put(
+        f"/catalogos/modelos/{d['modelo']}/asignaciones", json={"color_ids": []}, headers=hv
+    )
     assert r.status_code == 403
 
 
 def test_borrar_color_o_modelo_se_lleva_la_asignacion(client, session, iphone_15):
     d = iphone_15
+    _asignar(client, d, color_ids=[d["rosa"], d["negro"]], capacidad_ids=[d["128"]])
+
+    # Estar asignado a un modelo no impide borrar el color. Al modelo le queda otro: sin aviso.
+    r = client.delete(f"/catalogos/colores/{d['rosa']}", headers=d["h"])
+    assert r.status_code == 200 and r.json() == {"avisos": []}
+    assert _modelo(client, d)["color_ids"] == [d["negro"]]
+
     url = f"/catalogos/modelos/{d['modelo']}"
-    client.put(f"{url}/colores", json={"ids": [d["rosa"], d["negro"]]}, headers=d["h"])
-    client.put(f"{url}/capacidades", json={"ids": [d["128"]]}, headers=d["h"])
-
-    # Estar asignado a un modelo no impide borrar el color.
-    assert client.delete(f"/catalogos/colores/{d['rosa']}", headers=d["h"]).status_code == 204
-    assert client.get("/catalogos/modelos", headers=d["h"]).json()[0]["color_ids"] == [d["negro"]]
-
-    assert client.delete(url, headers=d["h"]).status_code == 204
+    assert client.delete(url, headers=d["h"]).status_code == 200
     assert session.exec(select(ModeloColor)).all() == []
     assert session.exec(select(ModeloCapacidad)).all() == []
+
+
+def test_avisa_si_un_modelo_se_queda_sin_opciones(client, iphone_15):
+    d = iphone_15
+    otro = {**d, "modelo": _crear(client, d["h"], "modelos", d["categoria"], "15 Plus")}
+    _asignar(client, d, color_ids=[d["verde"]], capacidad_ids=[d["64"], d["128"]])
+    _asignar(client, otro, color_ids=[d["verde"]])
+
+    r = client.delete(f"/catalogos/colores/{d['verde']}", headers=d["h"])
+    assert r.json() == {
+        "avisos": [
+            "«15» y «15 Plus» se quedaron sin colores marcados: "
+            "ahora ofrecen todos los de su categoría."
+        ]
+    }
+    r = client.delete(f"/catalogos/capacidades/{d['64']}", headers=d["h"])
+    assert r.json() == {"avisos": []}
+    r = client.delete(f"/catalogos/capacidades/{d['128']}", headers=d["h"])
+    assert r.json() == {
+        "avisos": [
+            "«15» se quedó sin capacidades marcadas: ahora ofrece todas las de su categoría."
+        ]
+    }
