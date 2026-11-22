@@ -60,12 +60,14 @@ export function CatalogosPage() {
   const [asignacionAbierta, setAsignacionAbierta] = useState(false)
 
   // Al cambiar de catálogo (también con atrás y adelante del navegador) se cierran los
-  // paneles, así no reaparecen solos al volver. Se ajusta durante el render, sin efecto.
+  // paneles y la confirmación de borrado: si quedara abierta, confirmar borraría el mismo
+  // id en el catálogo nuevo. Se ajusta durante el render, sin efecto.
   const [catalogoVisto, setCatalogoVisto] = useState(d.slug)
   if (catalogoVisto !== d.slug) {
     setCatalogoVisto(d.slug)
     setSheetAbierto(false)
     setAsignacionAbierta(false)
+    setABorrar(null)
   }
 
   const nombresCategoria = useMemo(
