@@ -4,7 +4,7 @@ from fastapi import FastAPI
 from sqlmodel import Session
 
 from app.core.config import get_settings
-from app.core.db import crear_tablas_sqlite, engine
+from app.core.db import crear_tablas_sqlite, engine, verificar_esquema
 from app.core.excepciones import registrar_manejadores
 from app.modules.auth.router import router as auth
 from app.modules.catalogos.router import router as catalogos
@@ -46,6 +46,8 @@ async def lifespan(_: FastAPI):
     if settings.entorno != "test":
         if settings.es_sqlite:
             crear_tablas_sqlite()
+        else:
+            verificar_esquema()
         with Session(engine) as session:
             sembrar_catalogos(session)
     yield
