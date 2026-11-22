@@ -99,6 +99,21 @@ CREATE TABLE colores (
     UNIQUE (categoria_id, nombre)
 );
 
+-- Qué colores y capacidades de su categoría tiene cada modelo. Un modelo sin filas acá
+-- ofrece todos los de su categoría. Que sean de la misma categoría lo valida la API
+-- (la categoría de un modelo, color o capacidad no se cambia).
+CREATE TABLE modelo_colores (
+    modelo_id int NOT NULL REFERENCES modelos(id) ON DELETE CASCADE,
+    color_id  int NOT NULL REFERENCES colores(id) ON DELETE CASCADE,
+    PRIMARY KEY (modelo_id, color_id)
+);
+
+CREATE TABLE modelo_capacidades (
+    modelo_id    int NOT NULL REFERENCES modelos(id) ON DELETE CASCADE,
+    capacidad_id int NOT NULL REFERENCES capacidades(id) ON DELETE CASCADE,
+    PRIMARY KEY (modelo_id, capacidad_id)
+);
+
 -- ─── Clientes y reclamos ─────────────────────────────────────────────────────
 CREATE TABLE clientes (
     id           serial PRIMARY KEY,

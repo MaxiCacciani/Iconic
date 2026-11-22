@@ -124,7 +124,9 @@ export function TablaUsuarios({
                         Desactivar
                       </DropdownMenuItem>
                     ) : (
-                      <DropdownMenuItem onSelect={() => onCambiarActivo(usuario)}>
+                      <DropdownMenuItem
+                        onSelect={() => onCambiarActivo(usuario)}
+                      >
                         <CheckCircleIcon />
                         Activar
                       </DropdownMenuItem>

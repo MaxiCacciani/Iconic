@@ -17,7 +17,7 @@ uv run python -m app.scripts.crear_admin --nombre "Admin" --email admin@iconic.c
 uv run fastapi dev app/main.py   # http://localhost:8000/docs
 ```
 
-Con SQLite las tablas salen de los modelos (`app/modules/models.py`).
+Con SQLite las tablas salen de los modelos (`app/modules/models.py`) y los catálogos se cargan al arrancar.
 
 ## Con Docker (PostgreSQL)
 
@@ -30,7 +30,7 @@ docker compose up --build        # db + api + frontend
 docker compose exec api python -m app.scripts.crear_admin --nombre "Admin" --email admin@iconic.com
 ```
 
-El esquema lo crean `backend/sql/schema.sql` y `backend/sql/catalogos.sql` la primera vez que se levanta el volumen.
+El esquema lo crea `backend/sql/schema.sql` la primera vez que se levanta el volumen. Los catálogos iniciales (categorías, proveedores, métodos de pago, etc.) los carga la API al arrancar, desde `app/modules/catalogos/semilla.py`, solo en las tablas que estén vacías.
 Si cambia el esquema: `docker compose down -v` y volver a levantar.
 
 ## Frontend local
@@ -62,7 +62,7 @@ backend/
     common/      RepositorioBase[M] + paginación, Value Objects (USD, IMEI, DNI, Telefono), ENUMs
     modules/     un módulo por dominio: router · schemas · service · repository · models
     scripts/     tareas de consola (crear_admin)
-  sql/           schema.sql (DER) y catalogos.sql
+  sql/           schema.sql (DER)
   tests/         pytest + httpx, SQLite en memoria
 frontend/
   src/

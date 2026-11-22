@@ -17,7 +17,11 @@ type Props = {
   onConfirmar: (usuario: Usuario) => void
 }
 
-export function ConfirmarDesactivar({ usuario, onCancelar, onConfirmar }: Props) {
+export function ConfirmarDesactivar({
+  usuario,
+  onCancelar,
+  onConfirmar,
+}: Props) {
   return (
     <AlertDialog
       open={usuario !== null}

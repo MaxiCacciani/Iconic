@@ -22,6 +22,7 @@ PERMISOS: dict[Rol, list[str]] = {
         "packs",
         "vendedores",
         "usuarios",
+        "catalogos",
         "garantias",
         "tipo_cambio:editar",
         "ver_costos",

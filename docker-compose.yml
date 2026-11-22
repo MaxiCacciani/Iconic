@@ -9,7 +9,6 @@ services:
     volumes:
       - pgdata:/var/lib/postgresql/data
       - ./backend/sql/schema.sql:/docker-entrypoint-initdb.d/01-schema.sql:ro
-      - ./backend/sql/catalogos.sql:/docker-entrypoint-initdb.d/02-catalogos.sql:ro
     ports:
       - "5432:5432"
     healthcheck:

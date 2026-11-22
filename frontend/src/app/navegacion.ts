@@ -5,6 +5,7 @@ import {
   HouseIcon,
   IdentificationBadgeIcon,
   type Icon,
+  ListBulletsIcon,
   PackageIcon,
   ReceiptIcon,
   ShieldCheckIcon,
@@ -105,6 +106,14 @@ export const SECCIONES: Seccion[] = [
     icono: IdentificationBadgeIcon,
     grupo: "Administración",
     cargar: () => import("@/features/vendedores").then((m) => m.VendedoresPage),
+  },
+  {
+    permiso: "catalogos",
+    ruta: "/catalogos",
+    titulo: "Catálogos",
+    icono: ListBulletsIcon,
+    grupo: "Administración",
+    cargar: () => import("@/features/catalogos").then((m) => m.CatalogosPage),
   },
   {
     permiso: "usuarios",

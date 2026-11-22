@@ -152,7 +152,9 @@ export function UsuarioSheet({ abierto, onAbiertoChange, usuario }: Props) {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="vendedor">{NOMBRE_ROL.vendedor}</SelectItem>
+                  <SelectItem value="vendedor">
+                    {NOMBRE_ROL.vendedor}
+                  </SelectItem>
                   <SelectItem value="admin">{NOMBRE_ROL.admin}</SelectItem>
                 </SelectContent>
               </Select>
