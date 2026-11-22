@@ -8,6 +8,7 @@ import { Button } from "@/shared/ui/button"
 import { EncabezadoPagina } from "@/shared/ui/encabezado-pagina"
 import { Skeleton } from "@/shared/ui/skeleton"
 
+import { TarjetaStock } from "../components/TarjetaStock"
 import { useRefrescarResumen, useResumen } from "../queries"
 
 export function ResumenPage() {
@@ -64,6 +65,7 @@ export function ResumenPage() {
           {!resumen.data.avisos.some((a) => a.tipo === "tc_sin_cargar") && (
             <TarjetaTipoCambio onCargado={refrescar} />
           )}
+          <TarjetaStock stock={resumen.data.stock} />
         </div>
       )}
     </>

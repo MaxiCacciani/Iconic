@@ -21,6 +21,14 @@ class AvisoRead(BaseModel):
     mensaje: str
 
 
+class StockRead(BaseModel):
+    """En unidades, no en filas: un accesorio por cantidad suma todas las suyas."""
+
+    disponibles: int
+    nuevas: int
+
+
 class ResumenRead(BaseModel):
     fecha: date
     avisos: list[AvisoRead]
+    stock: StockRead

@@ -70,6 +70,7 @@ class CatalogoService:
             quitada = bool(
                 marca and getattr(entidad, marca.campo) and cambios.get(marca.campo) is False
             )
+            self._verificar_fijos(entidad, cambios)
             # Sin autoflush: las consultas de validación no tienen que grabar los cambios
             # antes de chequearlos (un nombre repetido chocaría con el UNIQUE de la base).
             with self.uow.session.no_autoflush:
@@ -141,6 +142,19 @@ class CatalogoService:
 
         if self.d.validar:
             self.d.validar(entidad)
+
+    def _verificar_fijos(self, entidad: SQLModel, cambios: dict) -> None:
+        """Lo que no se cambia si ya hay productos (ver `FijoConProductos`)."""
+        fijo = self.d.fijo_con_productos
+        if fijo is None:
+            return
+        cambiados = [c for c in fijo.campos if c in cambios and cambios[c] != getattr(entidad, c)]
+        if not cambiados:
+            return
+        cantidad = fijo.contar(self.uow.session, entidad.id)  # type: ignore[attr-defined]
+        if cantidad:
+            productos = "1 producto cargado" if cantidad == 1 else f"{cantidad} productos cargados"
+            raise ErrorDeCampo(cambiados[0], fijo.mensaje.format(productos))
 
     def _sacar_marca_a_las_demas(self, entidad: SQLModel) -> None:
         """La marca (predeterminado, inicial) queda en una sola fila: la que se está marcando."""

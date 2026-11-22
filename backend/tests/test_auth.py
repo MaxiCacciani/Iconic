@@ -26,6 +26,7 @@ def test_vendedor_no_ve_costos(client, vendedor):
     permisos = client.get("/auth/me", headers=auth_header(vendedor)).json()["permisos"]
     assert "ver_costos" not in permisos
     assert "tipo_cambio:editar" not in permisos
+    assert "productos:editar" not in permisos
 
 
 def test_token_vencido(client, admin, monkeypatch):
