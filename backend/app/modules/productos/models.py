@@ -33,8 +33,9 @@ class Producto(SQLModel, table=True):
             "uq_productos_imei",
             "imei",
             unique=True,
-            sqlite_where=text("imei IS NOT NULL"),
-            postgresql_where=text("imei IS NOT NULL"),
+            # Solo en el stock (lo no vendido): un equipo vendido puede volver por canje.
+            sqlite_where=text("imei IS NOT NULL AND estado <> 'vendido'"),
+            postgresql_where=text("imei IS NOT NULL AND estado <> 'vendido'"),
         ),
         Index("ix_productos_estado", "estado"),
         Index("ix_productos_modelo", "modelo_id"),

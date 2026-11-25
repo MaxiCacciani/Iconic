@@ -1,7 +1,8 @@
 """Factory de `Producto`: arma el producto según el tipo de su categoría y lo valida entero.
 
 Reglas 2.1 y 2.2:
-- Equipos con IMEI: IMEI obligatorio (15 dígitos, Luhn, sin duplicados) y batería opcional.
+- Equipos con IMEI: IMEI obligatorio (15 dígitos, Luhn, sin duplicados en el stock, es
+  decir, entre lo no vendido) y batería opcional.
 - Consolas: cantidad de controles (0 a 4) y extras.
 - Accesorios: por cantidad, varias unidades por fila.
 - Lo que el tipo no lleva no se acepta: un AirPods no tiene IMEI ni un cargador, batería.
@@ -96,10 +97,10 @@ class ProductoFactory:
         if tipo.usa_imei:
             if d["imei"] is None:
                 raise ErrorDeCampo("imei", f"El IMEI es obligatorio en {categoria}.")
-            repetido = self.productos.por_imei(d["imei"])
+            repetido = self.productos.en_stock_por_imei(d["imei"])
             if repetido is not None and repetido.id != producto_id:
                 raise ErrorDeCampo(
-                    "imei", f"Ese IMEI ya está cargado en el producto #{repetido.id}."
+                    "imei", f"Ese IMEI ya está en el stock: producto #{repetido.id}."
                 )
         elif d["imei"] is not None:
             raise ErrorDeCampo("imei", f"{categoria} no lleva IMEI.")

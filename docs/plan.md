@@ -22,7 +22,7 @@ Al cerrar una fase, marcala acá.
 
 ## Estado actual (21/11/2026)
 
-**Verificado:** `uv run pytest` pasa 153 tests, `ruff` está limpio, y `npm run build`, `typecheck` y `oxlint` pasan sin errores ni avisos. `docker compose up` levanta todo y la app responde en `localhost:8080`.
+**Verificado:** `uv run pytest` pasa 157 tests, `ruff` está limpio, y `npm run build`, `typecheck` y `oxlint` pasan sin errores ni avisos. `docker compose up` levanta todo y la app responde en `localhost:8080`.
 
 **Fase 0:** completa. Además, `schema.sql` ya tiene las tablas del DER (26 al cerrar la fase; 28 desde que se sumaron `modelo_colores` y `modelo_capacidades`) (los catálogos iniciales pasaron a la semilla de la Fase 3). Las clases SQLModel solo existen para `usuarios`: las demás se escriben en su fase.
 
@@ -72,7 +72,7 @@ Al cerrar una fase, marcala acá.
 - Resumen suma `stock`: unidades disponibles y cuántas son nuevas (un accesorio por cantidad suma todas las suyas).
 - En el front: feature `productos` con el listado (filtros en la URL, búsqueda, paginación, batería con color y costo y margen solo si la API los manda), alta y edición en un `Sheet` con campos según el tipo de la categoría, color y capacidad pedidos con `?modelo_id=`, defectos de la lista o escritos, y borrado con confirmación. Tarjeta de stock en Resumen. Tokens `success` e `info` en `index.css` para la batería.
 - Tests: 25 de dominio y State, y 26 de API (tipos de categoría, IMEI, opciones del modelo, precio y costo, defectos, edición, borrado, estados, filtros, DTOs por rol, Resumen y el bloqueo en catálogos).
-- **Para la Fase 7:** el IMEI es único en toda la tabla (índice de `schema.sql`), pero la regla del canje dice "no repetido en el stock no vendido". Si un equipo vendido vuelve por canje, hoy choca. Hay que decidir antes de esa fase (ver "Decisiones pendientes").
+- **IMEI único solo en el stock (decidido el 25/11/2026):** no se repite entre lo no vendido (disponible o reservado). Un equipo vendido puede volver a entrar con el mismo IMEI, porque las ventas apuntan al `producto_id`. Índice parcial `uq_productos_imei ... WHERE imei IS NOT NULL AND estado <> 'vendido'` en `schema.sql` y en el modelo, y `ProductoRepository.en_stock_por_imei` en la factory. En una base ya creada: `DROP INDEX uq_productos_imei;` y el `CREATE UNIQUE INDEX` de `schema.sql`.
 - "Otro" (reglas 2.1): un modelo, capacidad o color que no está se agrega desde Catálogos; el alta avisa y enlaza ahí si la categoría no tiene modelos.
 
 **Decisiones confirmadas (21/11/2026):**
@@ -181,7 +181,8 @@ Al cerrar una fase, marcala acá.
   - historial de ventas.
 - **Pruebas:** atomicidad (si falla un paso no queda nada grabado), stock después de vender y de borrar, y el Vendedor sin costos.
 - **Resumen:** ventas de hoy y de los últimos 7 días.
-- **Decisión pendiente antes de esta fase:** si no hay TC cargado, ¿la venta se bloquea?
+- **Sin TC del día no se vende (decidido el 25/11/2026):** `POST /ventas` lo rechaza. El wizard avisa antes de confirmar: al admin le ofrece cargarlo ahí mismo (`AvisoTipoCambio`); al Vendedor le indica que le pida a un Administrador que lo cargue. Lo mismo vale para la seña de una reserva (Fase 9), que también congela el TC.
+- **Borrar una venta con un equipo que ya volvió al stock:** con el IMEI único solo en el stock, si el equipo vendido volvió a entrar (por canje) con el mismo IMEI, devolverlo a `disponible` dejaría dos iguales y el índice lo frena. Hay que decidir el comportamiento (por ejemplo, rechazar el borrado con un mensaje claro) y testearlo.
 
 ## Fase 8 — Cuotas, cobros y agenda
 - **Backend:**
@@ -236,5 +237,6 @@ Al cerrar una fase, marcala acá.
 
 ## Decisiones pendientes
 1. **Migraciones:** el README ya usa `schema.sql` y `docker compose down -v` cuando cambia el esquema, así que todo indica que se descartó Alembic. Falta confirmarlo.
-2. **TC sin cargar en una venta:** se necesita la respuesta antes de la Fase 7.
-3. **IMEI repetido con un equipo vendido:** el índice `uq_productos_imei` no deja repetir un IMEI en ninguna fila, vendidas incluidas. La regla del canje (4.5) solo lo prohíbe en el stock no vendido. Opciones: limitar el índice a lo no vendido (y frenar el borrado de una venta si su equipo ya volvió a entrar) o mantenerlo y reusar la fila del equipo vendido. Se necesita antes de la Fase 7.
+2. ~~TC sin cargar en una venta~~: decidido (ver Fase 7).
+3. ~~IMEI repetido con un equipo vendido~~: decidido (ver Fase 4).
+4. **Borrar una venta cuyo equipo volvió al stock por canje:** ver Fase 7.

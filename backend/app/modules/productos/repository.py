@@ -71,8 +71,14 @@ class ProductoRepository(RepositorioBase[Producto]):
             select(Producto).where(Producto.id == id).options(*_CARGAR)
         ).first()
 
-    def por_imei(self, imei: str) -> Producto | None:
-        return self.session.exec(select(Producto).where(Producto.imei == imei)).first()
+    def en_stock_por_imei(self, imei: str) -> Producto | None:
+        """El producto no vendido (disponible o reservado) con ese IMEI. Los vendidos no
+        cuentan: el mismo equipo puede volver a entrar por canje."""
+        return self.session.exec(
+            select(Producto).where(
+                Producto.imei == imei, Producto.estado != EstadoProductoEnum.vendido
+            )
+        ).first()
 
     def unidades(self, estado: EstadoProductoEnum, condicion: Condicion | None = None) -> int:
         """Unidades (no filas): un accesorio por cantidad suma todas las suyas."""

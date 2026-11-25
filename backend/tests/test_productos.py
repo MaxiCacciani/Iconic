@@ -165,7 +165,7 @@ def test_imei_obligatorio_valido_y_sin_duplicados(client, admin, datos):
     pid = _crear(client, admin, _iphone(datos)).json()["id"]
     r = _crear(client, admin, _iphone(datos))
     assert r.status_code == 422
-    assert _errores(r)["imei"] == f"Ese IMEI ya está cargado en el producto #{pid}."
+    assert _errores(r)["imei"] == f"Ese IMEI ya está en el stock: producto #{pid}."
 
 
 def test_equipo_sin_imei(client, admin, datos):
@@ -451,3 +451,33 @@ def test_un_modelo_con_productos_no_se_borra(client, admin, datos):
     _crear(client, admin, _iphone(datos))
     r = client.delete(f"/catalogos/modelos/{datos.iphone_15}", headers=auth_header(admin))
     assert r.status_code == 409
+
+
+def test_imei_unico_solo_en_el_stock(client, admin, datos, session):
+    """Un equipo vendido puede volver a entrar (por canje) con el mismo IMEI; uno
+    reservado sigue en el stock y no."""
+    vendido = _crear(client, admin, _iphone(datos)).json()["id"]
+    session.get(Producto, vendido).vender()
+    session.commit()
+    r = _crear(client, admin, _iphone(datos))
+    assert r.status_code == 201, r.text
+    otra_vez = r.json()["id"]
+
+    session.get(Producto, otra_vez).reservar()
+    session.commit()
+    r = _crear(client, admin, _iphone(datos))
+    assert _errores(r)["imei"] == f"Ese IMEI ya está en el stock: producto #{otra_vez}."
+
+
+def test_la_base_frena_dos_imei_iguales_en_el_stock(session, datos):
+    """El índice parcial también lo frena, por si algo saltea la validación."""
+    from sqlalchemy.exc import IntegrityError
+
+    base = {"modelo_id": datos.iphone_15, "proveedor_id": datos.proveedor}
+    comun = {**base, "condicion": "usado", "imei": IMEI_1, "precio_usd": 800}
+    session.add(Producto(**comun, estado="vendido"))
+    session.add(Producto(**comun))
+    session.commit()  # uno vendido y uno disponible: se puede
+    session.add(Producto(**comun))
+    with pytest.raises(IntegrityError):
+        session.commit()

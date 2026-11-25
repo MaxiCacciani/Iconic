@@ -142,7 +142,10 @@ CREATE TABLE productos (
     estado       estado_producto NOT NULL DEFAULT 'disponible',
     creado_en    timestamptz     NOT NULL DEFAULT now()
 );
-CREATE UNIQUE INDEX uq_productos_imei ON productos (imei) WHERE imei IS NOT NULL;
+-- El IMEI no se repite en el stock (lo no vendido). Uno vendido puede volver a entrar
+-- por canje con el mismo IMEI: las ventas apuntan al producto_id, no al IMEI.
+CREATE UNIQUE INDEX uq_productos_imei ON productos (imei)
+    WHERE imei IS NOT NULL AND estado <> 'vendido';
 CREATE INDEX ix_productos_estado ON productos (estado);
 CREATE INDEX ix_productos_modelo ON productos (modelo_id);
 
