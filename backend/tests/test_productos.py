@@ -228,6 +228,40 @@ def test_color_y_capacidad_entre_las_opciones_del_modelo(client, admin, datos):
     assert "capacidad_id" in _errores(otra)
 
 
+def test_editar_con_un_color_que_el_modelo_ya_no_ofrece(client, admin, datos, session):
+    # Un modelo sin colores marcados ofrece todos: se carga en verde.
+    modelo = Modelo(categoria_id=datos.iphone, nombre="iPhone 14")
+    blanco = Color(categoria_id=datos.iphone, nombre="Blanco")
+    session.add_all([modelo, blanco])
+    session.commit()
+    p = _crear(client, admin, _iphone(datos, modelo_id=modelo.id, color_id=datos.verde)).json()
+    # Después el admin le deja marcado solo el negro.
+    session.add(ModeloColor(modelo_id=modelo.id, color_id=datos.negro))
+    session.commit()
+    h = auth_header(admin)
+    # Lo que no se toca no se vuelve a controlar: el equipo sigue siendo verde.
+    r = client.patch(f"/productos/{p['id']}", json={"precio_usd": 900}, headers=h)
+    assert r.status_code == 200, r.text
+    assert r.json()["color"]["id"] == datos.verde
+    # Mandar el mismo color tampoco es un cambio.
+    r = client.patch(f"/productos/{p['id']}", json={"color_id": datos.verde}, headers=h)
+    assert r.status_code == 200, r.text
+    # Cambiarlo a otro que no se ofrece, sí se controla.
+    r = client.patch(f"/productos/{p['id']}", json={"color_id": blanco.id}, headers=h)
+    assert _errores(r)["color_id"] == "Ese color no está entre las opciones de iPhone 14."
+    # Y cambiar el modelo vuelve a controlar el color contra el modelo nuevo.
+    r = client.patch(f"/productos/{p['id']}", json={"modelo_id": datos.iphone_15}, headers=h)
+    assert _errores(r)["color_id"] == "Ese color no está entre las opciones de iPhone 15."
+
+
+def test_buscar_con_comodines_de_like(client, admin, datos):
+    _crear(client, admin, _iphone(datos))
+    h = auth_header(admin)
+    for texto in ("%", "_"):
+        r = client.get("/productos", params={"buscar": texto}, headers=h)
+        assert r.json()["total"] == 0, texto
+
+
 def test_precio_y_costo(client, admin, datos):
     assert "precio_usd" in _errores(_crear(client, admin, _iphone(datos, precio_usd=0)))
     assert "costo_usd" in _errores(_crear(client, admin, _iphone(datos, costo_usd=-1)))

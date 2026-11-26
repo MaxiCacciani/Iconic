@@ -7,7 +7,8 @@ Reglas 2.1 y 2.2:
 - Accesorios: por cantidad, varias unidades por fila.
 - Lo que el tipo no lleva no se acepta: un AirPods no tiene IMEI ni un cargador, batería.
 - Capacidad y color tienen que estar entre las opciones del modelo: sus asignados o, si
-  no tiene, los de su categoría (`CatalogoService.opciones_de_modelo`).
+  no tiene, los de su categoría (`CatalogoService.opciones_de_modelo`). Al editar, solo
+  si cambian o cambia el modelo.
 - Precio mayor a 0 y costo entre 0 y el precio.
 
 `desde_canje` (el equipo que entra por plan canje) se suma en la Fase 7.
@@ -29,6 +30,7 @@ CAMPOS = (
     "controles", "extras", "cantidad", "precio_usd", "costo_usd",
 )  # fmt: skip
 _OBLIGATORIOS = ("modelo_id", "proveedor_id", "condicion", "precio_usd", "cantidad")
+_OPCIONES = ("capacidad_id", "color_id")  # tienen que estar entre las opciones del modelo
 
 
 class ProductoFactory:
@@ -40,7 +42,7 @@ class ProductoFactory:
 
     def crear(self, datos: dict[str, Any]) -> Producto:
         """Un producto nuevo, disponible. Todavía no está en la sesión."""
-        producto = Producto(**self._validados(datos, producto_id=None))
+        producto = Producto(**self._validados(datos, producto_id=None, opciones=_OPCIONES))
         producto.defectos = self._defectos(datos)
         return producto
 
@@ -49,7 +51,14 @@ class ProductoFactory:
         datos = {campo: getattr(producto, campo) for campo in CAMPOS} | {
             k: v for k, v in cambios.items() if k in CAMPOS
         }
-        validados = self._validados(datos, producto_id=producto.id)
+        # Color y capacidad se controlan contra las opciones del modelo solo si cambian (o
+        # cambia el modelo): si después el admin le sacó esa opción al modelo, el equipo que
+        # ya la tiene se sigue pudiendo editar sin tocarla.
+        if datos["modelo_id"] != producto.modelo_id:
+            opciones = _OPCIONES
+        else:
+            opciones = tuple(c for c in _OPCIONES if datos[c] != getattr(producto, c))
+        validados = self._validados(datos, producto_id=producto.id, opciones=opciones)
         # Sin autoflush: si una consulta grabara antes de tiempo, chocaría con los CHECK.
         with self.session.no_autoflush:
             for campo, valor in validados.items():
@@ -59,7 +68,9 @@ class ProductoFactory:
         return producto
 
     # ─── Validación ──────────────────────────────────────────────────────────
-    def _validados(self, datos: dict[str, Any], producto_id: int | None) -> dict[str, Any]:
+    def _validados(
+        self, datos: dict[str, Any], producto_id: int | None, opciones: tuple[str, ...]
+    ) -> dict[str, Any]:
         d = {campo: datos.get(campo) for campo in CAMPOS}
         for campo in _OBLIGATORIOS:
             if d[campo] is None:
@@ -73,8 +84,10 @@ class ProductoFactory:
         if self.session.get(Proveedor, d["proveedor_id"]) is None:
             raise ErrorDeCampo("proveedor_id", "Ese proveedor no existe.")
 
-        self._opcion_del_modelo(d, "capacidad_id", "capacidades", modelo, "Esa capacidad")
-        self._opcion_del_modelo(d, "color_id", "colores", modelo, "Ese color")
+        if "capacidad_id" in opciones:
+            self._opcion_del_modelo(d, "capacidad_id", "capacidades", modelo, "Esa capacidad")
+        if "color_id" in opciones:
+            self._opcion_del_modelo(d, "color_id", "colores", modelo, "Ese color")
         self._segun_tipo(d, modelo, producto_id)
 
         if d["costo_usd"] is not None and d["costo_usd"] > d["precio_usd"]:

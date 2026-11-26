@@ -110,6 +110,13 @@ export function ProductosPage() {
 
   // La búsqueda pasa a la URL cuando se deja de escribir.
   const buscarEnUrl = params.get("buscar") ?? ""
+  // Y al revés: si la URL cambia por otro lado (Atrás, Adelante, un link), el campo la
+  // sigue; si no, la espera de arriba volvería a pisar la URL con lo viejo.
+  const [buscarVisto, setBuscarVisto] = useState(buscarEnUrl)
+  if (buscarEnUrl !== buscarVisto) {
+    setBuscarVisto(buscarEnUrl)
+    if (buscarEnUrl !== busqueda.trim()) setBusqueda(buscarEnUrl)
+  }
   useEffect(() => {
     if (busqueda.trim() === buscarEnUrl) return
     const espera = setTimeout(
@@ -137,6 +144,24 @@ export function ProductosPage() {
   const paginas = stock.data
     ? Math.max(1, Math.ceil(stock.data.total / TAMANIO_PAGINA))
     : 1
+  // Una página que ya no existe (se borró o se vendió lo último de la última, o vino así
+  // en un link): se pasa a la última que tiene productos, sin sumar una entrada al historial.
+  const fueraDeRango =
+    stock.data !== undefined &&
+    !stock.isPlaceholderData &&
+    filtros.pagina > paginas
+  useEffect(() => {
+    if (!fueraDeRango) return
+    setParams(
+      (actual) => {
+        const nuevos = new URLSearchParams(actual)
+        if (paginas > 1) nuevos.set("pagina", String(paginas))
+        else nuevos.delete("pagina")
+        return nuevos
+      },
+      { replace: true }
+    )
+  }, [fueraDeRango, paginas, setParams])
 
   return (
     <>
@@ -255,7 +280,7 @@ export function ProductosPage() {
               </Button>
             </AlertDescription>
           </Alert>
-        ) : stock.isPending ? (
+        ) : stock.isPending || fueraDeRango ? (
           <div className="flex flex-col gap-2" aria-busy="true">
             <span className="sr-only">Cargando el stock…</span>
             {Array.from({ length: 6 }, (_, i) => (

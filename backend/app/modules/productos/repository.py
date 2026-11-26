@@ -52,8 +52,9 @@ class ProductoRepository(RepositorioBase[Producto]):
         if filtros.buscar and (texto := filtros.buscar.strip()):
             consulta = consulta.where(
                 or_(
-                    col(Producto.imei).contains(texto),
-                    func.lower(Modelo.nombre).contains(texto.lower()),
+                    # autoescape: un "%" o "_" escrito se busca como tal, no como comodín.
+                    col(Producto.imei).contains(texto, autoescape=True),
+                    func.lower(Modelo.nombre).contains(texto.lower(), autoescape=True),
                 )
             )
 
