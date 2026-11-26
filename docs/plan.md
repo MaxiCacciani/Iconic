@@ -12,17 +12,17 @@ Al cerrar una fase, marcala acá.
 - [x] Fase 3 — Catálogos
 - [x] Fase 4 — Productos y stock
 - [x] Fase 5 — Clientes
-- [ ] Fase 6 — Vendedores y packs ← **siguiente**
-- [ ] Fase 7 — Ventas al contado y canje
+- [x] Fase 6 — Vendedores y packs
+- [ ] Fase 7 — Ventas al contado y canje ← **siguiente**
 - [ ] Fase 8 — Cuotas, cobros y agenda
 - [ ] Fase 9 — Reservas
 - [ ] Fase 10 — Garantías
 - [ ] Fase 11 — Reclamos
 - [ ] Fase 12 — Cierre
 
-## Estado actual (25/11/2026)
+## Estado actual (26/11/2026)
 
-**Verificado:** `uv run pytest` pasa 200 tests, `ruff` está limpio, y `npm run build`, `typecheck` y `oxlint` pasan sin errores ni avisos. `docker compose up` levanta todo y la app responde en `localhost:8080`.
+**Verificado:** `uv run pytest` pasa 244 tests, `ruff` está limpio, y `npm run build`, `typecheck` y `oxlint` pasan sin errores ni avisos. `docker compose up` levanta todo y la app responde en `localhost:8080`.
 
 **Fase 0:** completa. Además, `schema.sql` ya tiene las tablas del DER (26 al cerrar la fase; 28 desde que se sumaron `modelo_colores` y `modelo_capacidades`) (los catálogos iniciales pasaron a la semilla de la Fase 3). Las clases SQLModel solo existen para `usuarios`: las demás se escriben en su fase.
 
@@ -86,6 +86,18 @@ Al cerrar una fase, marcala acá.
 - `BuscadorCliente` (exportado en `features/clientes`) para la venta y la reserva: combobox (`popover` + `command` de shadcn) que busca en la API mientras se escribe y, si no está, da de alta ahí mismo con lo escrito como nombre o, si es un número, como DNI. Enter elige el primer resultado. Se probó montándolo a mano; todavía no lo usa ninguna pantalla.
 - Formatters `formatearDNI` y `formatearDiaDe` (un instante, en el día de Argentina).
 - Tests: 28 de API (alta, DNI y teléfono, DNI único, edición, búsqueda, paginación, ficha, borrado con historial, roles y la localidad en uso) y uno de Value Objects.
+
+**Fase 6:** completa y probada en el navegador con los dos roles, con la API contra PostgreSQL (`schema.sql`).
+- `vendedores` con SQLModel. `GET /vendedores` (ordenados por número) y `GET /vendedores/numero/{numero}` para todos los logueados (el wizard de la Fase 7 busca por número; si no está, 404 con "Vendedor no registrado."). `POST`, `PATCH` y `DELETE` solo para el admin. El número es único (el 422 nombra a quién lo tiene) y el nombre se guarda con mayúsculas iniciales, como el de los clientes.
+- **Decisión:** un vendedor con ventas no se borra (409, leído de las claves foráneas). La tabla no tiene `activo`: si hace falta sacar de la lista a uno con ventas, habría que sumarlo.
+- `packs` y `pack_items` con SQLModel. `GET /packs`, `GET /packs/{id}` y `POST /packs/{id}/aplicar` para todos los logueados; `POST`, `PATCH` (los `items` reemplazan la lista entera) y `DELETE` solo para el admin. `PackRead` trae, por ítem, `unidades_disponibles` hoy.
+- Validación de los ítems: producto o categoría (uno de los dos), que existan, un producto fijo no se repite en el pack, uno vendido no se suma (si ya estaba, puede quedar y al aplicar se avisa), y un equipo va con cantidad 1. **Decisión:** el pack no mira el stock al guardarse (la cantidad es lo que trae el combo); se verifica al aplicarlo. **Decisión:** el nombre del pack no se repite, sin distinguir mayúsculas.
+- **Aplicar** (`packs/dominio.py`, `repartir`, función pura): primero los fijos y después las categorías, tomando el disponible más antiguo; una unidad no se da dos veces y lo que viene en `en_carrito` se descuenta. Un accesorio por cantidad se reparte entre filas si una no alcanza. **El pack va entero o no va (decidido el 26/11/2026):** si algún ítem no se cubre (vendido, reservado, ya en el carrito o sin unidades), responde 409 con "No se pudo agregar el pack por falta de stock de …" y no devuelve ninguna línea. Los productos salen por rol (`PackAplicadoVendedor` sin costos). No reserva nada.
+- Borrar un producto saca su ítem del pack (`ON DELETE CASCADE`; en SQLite lo hace `PackRepository.borrar_items_de_producto`). Un pack puede quedar sin ítems y la tarjeta lo avisa.
+- `ProductoService.leer` (antes `_leer`) es público para armar el DTO por rol desde otros módulos. `ProductoRepository` suma `por_ids` y `disponibles_por_categoria`.
+- En el front: features `vendedores` (tabla, alta y edición en un `Sheet`, borrado con confirmación) y `packs` (tarjetas con cada ítem, regalo y aviso si hoy no alcanza el stock; alta y edición con un editor de ítems). `BuscadorProducto` (exportado en `features/productos`) busca disponibles por modelo o IMEI, para los packs y el carrito de la Fase 7. `useAplicarPack` queda exportado para el wizard.
+- `datos_prueba` suma 4 vendedores y 3 packs.
+- Tests: 9 del reparto (dominio), 26 de API de packs y 9 de vendedores.
 
 **Decisiones confirmadas (21/11/2026):**
 - Los usuarios se **desactivan, no se borran**, porque ventas y reservas guardan `usuario_id`.

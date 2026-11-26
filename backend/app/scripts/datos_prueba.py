@@ -1,12 +1,14 @@
-"""Carga datos de prueba: usuarios, TC de hoy, catálogos ampliados y ~90 productos.
+"""Carga datos de prueba: usuarios, TC de hoy, catálogos ampliados, ~90 productos,
+vendedores y packs.
 
     uv run python -m app.scripts.datos_prueba                   # local (la base del .env)
     docker compose exec api python -m app.scripts.datos_prueba
 
 Se puede correr varias veces: los catálogos se completan por nombre (no se duplican), los
 usuarios y el TC solo se cargan si faltan, y los productos solo si la tabla está vacía
-(con `--productos-igual` se suman otra tanda). Los productos se crean con
-`ProductoService`, así que pasan por las mismas validaciones que el alta de la pantalla.
+(con `--productos-igual` se suman otra tanda). Los vendedores se completan por número y
+los packs solo se cargan si no hay ninguno. Productos y packs se crean con sus services,
+así que pasan por las mismas validaciones que el alta de la pantalla.
 
 Usuarios (contraseña `iconic123`, o la de `--password`):
 - admin@iconic.com    Administrador
@@ -42,13 +44,19 @@ from app.modules.catalogos.models import (
 )
 from app.modules.catalogos.semilla import sembrar_catalogos
 from app.modules.catalogos.service import AsignacionService
+from app.modules.packs.models import Pack
+from app.modules.packs.schemas import PackCreate, PackItemCreate
+from app.modules.packs.service import PackService
 from app.modules.productos.models import Producto
 from app.modules.productos.schemas import ProductoCreate
 from app.modules.productos.service import ProductoService
 from app.modules.tipo_cambio.models import TipoCambio
 from app.modules.usuarios.models import Usuario
+from app.modules.vendedores.models import Vendedor
 
 TC_HOY = Decimal("1180.50")
+
+VENDEDORES = [(1, "Martín Ríos"), (2, "Sofía Herrera"), (3, "Lucas Bertorello"), (7, "Camila Paz")]
 
 # ─── Catálogos ───────────────────────────────────────────────────────────────
 PROVEEDORES = ["Distribuidora Norte", "Apple Store Miami", "Gamer Point"]
@@ -455,6 +463,66 @@ def _productos(session: Session, modelos: dict, rng: random.Random) -> int:
     return creados
 
 
+def _vendedores(session: Session) -> None:
+    for numero, nombre in VENDEDORES:
+        if _por_nombre(session, Vendedor, "numero", numero) is None:  # type: ignore[arg-type]
+            session.add(Vendedor(numero=numero, nombre=nombre))
+            print(f"  vendedor {numero}: {nombre}")
+    session.commit()
+
+
+def _packs(session: Session) -> None:
+    if session.exec(select(Pack)).first() is not None:
+        print("  packs: ya hay, no se suman")
+        return
+
+    def categoria(nombre: str) -> int | None:
+        c = _por_nombre(session, Categoria, "nombre", nombre)
+        return c.id if c else None
+
+    def items(*pedidos: tuple[str, int, bool]) -> list[PackItemCreate]:
+        return [
+            PackItemCreate(categoria_id=cid, cantidad=cantidad, es_regalo=regalo)
+            for nombre, cantidad, regalo in pedidos
+            if (cid := categoria(nombre)) is not None
+        ]
+
+    packs = [
+        PackCreate(
+            nombre="iPhone + accesorios de regalo",
+            descripcion="Vidrio templado y funda sin cargo con cualquier iPhone.",
+            items=items(
+                ("iPhone", 1, False), ("Vidrio templado", 1, True), ("Funda/Case", 1, True)
+            ),
+        ),
+        PackCreate(
+            nombre="Kit de carga",
+            items=items(("Cargador", 1, False), ("Cable", 1, True)),
+        ),
+    ]
+    # Uno con producto fijo: el primer cargador del stock, con un cable de regalo.
+    cargador = session.exec(
+        select(Producto)
+        .join(Modelo)
+        .where(Modelo.categoria_id == categoria("Cargador"), Producto.cantidad >= 2)
+        .order_by(Producto.id)  # type: ignore[arg-type]
+    ).first()
+    if cargador is not None:
+        packs.append(
+            PackCreate(
+                nombre="Dos cargadores + cable",
+                items=[
+                    PackItemCreate(producto_id=cargador.id, cantidad=2),
+                    *items(("Cable", 1, True)),
+                ],
+            )
+        )
+    for datos in packs:
+        if datos.items:
+            PackService(UnidadDeTrabajo(session)).crear(datos)
+            print(f"  pack {datos.nombre}")
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(
         description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter
@@ -480,6 +548,8 @@ def main() -> None:
         else:
             creados = _productos(session, modelos, random.Random(args.semilla))
             print(f"  productos: {creados} creados")
+        _vendedores(session)
+        _packs(session)
     print("Listo.")
 
 

@@ -72,6 +72,26 @@ class ProductoRepository(RepositorioBase[Producto]):
             select(Producto).where(Producto.id == id).options(*_CARGAR)
         ).first()
 
+    def por_ids(self, ids: set[int]) -> Sequence[Producto]:
+        """Con lo que se muestra de cada uno (modelo, categoría, color…)."""
+        return self.session.exec(
+            select(Producto).where(col(Producto.id).in_(ids)).options(*_CARGAR)
+        ).all()
+
+    def disponibles_por_categoria(self, categoria_ids: set[int]) -> Sequence[Producto]:
+        """Los disponibles de esas categorías, del más antiguo al más nuevo: el primero es
+        el que lleva más tiempo en el stock."""
+        return self.session.exec(
+            select(Producto)
+            .join(Modelo, col(Producto.modelo_id) == col(Modelo.id))
+            .where(
+                col(Modelo.categoria_id).in_(categoria_ids),
+                Producto.estado == EstadoProductoEnum.disponible,
+            )
+            .options(*_CARGAR)
+            .order_by(col(Producto.id))
+        ).all()
+
     def en_stock_por_imei(self, imei: str) -> Producto | None:
         """El producto no vendido (disponible o reservado) con ese IMEI. Los vendidos no
         cuentan: el mismo equipo puede volver a entrar por canje."""

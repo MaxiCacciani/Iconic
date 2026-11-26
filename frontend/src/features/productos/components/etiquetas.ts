@@ -11,3 +11,13 @@ export const ESTADO: Record<EstadoProducto, string> = {
   reservado: "Reservado",
   vendido: "Vendido",
 }
+
+type ConVariante = {
+  capacidad: { nombre: string } | null
+  color: { nombre: string } | null
+}
+
+/** "128 GB · Negro", lo que diferencia a dos equipos del mismo modelo. */
+export function variante(p: ConVariante): string {
+  return [p.capacidad?.nombre, p.color?.nombre].filter(Boolean).join(" · ")
+}

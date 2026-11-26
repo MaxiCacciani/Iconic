@@ -560,6 +560,120 @@ export interface paths {
     patch: operations["actualizar_clientes__cliente_id__patch"]
     trace?: never
   }
+  "/packs": {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /** Listar */
+    get: operations["listar_packs_get"]
+    put?: never
+    /** Crear */
+    post: operations["crear_packs_post"]
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  "/packs/{pack_id}": {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /** Obtener */
+    get: operations["obtener_packs__pack_id__get"]
+    put?: never
+    post?: never
+    /** Eliminar */
+    delete: operations["eliminar_packs__pack_id__delete"]
+    options?: never
+    head?: never
+    /** Actualizar */
+    patch: operations["actualizar_packs__pack_id__patch"]
+    trace?: never
+  }
+  "/packs/{pack_id}/aplicar": {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /**
+     * Aplicar
+     * @description Los productos del pack para sumar al carrito. Va entero o no va: si falta stock de
+     *     algo, 409. No reserva nada: el stock se toca recién al vender.
+     */
+    post: operations["aplicar_packs__pack_id__aplicar_post"]
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  "/vendedores": {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /** Listar */
+    get: operations["listar_vendedores_get"]
+    put?: never
+    /** Crear */
+    post: operations["crear_vendedores_post"]
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  "/vendedores/numero/{numero}": {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /**
+     * Por Numero
+     * @description El vendedor con ese número. Si no está, 404 con "Vendedor no registrado.".
+     */
+    get: operations["por_numero_vendedores_numero__numero__get"]
+    put?: never
+    post?: never
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  "/vendedores/{vendedor_id}": {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    post?: never
+    /** Eliminar */
+    delete: operations["eliminar_vendedores__vendedor_id__delete"]
+    options?: never
+    head?: never
+    /** Actualizar */
+    patch: operations["actualizar_vendedores__vendedor_id__patch"]
+    trace?: never
+  }
   "/tipo-cambio/hoy": {
     parameters: {
       query?: never
@@ -750,6 +864,16 @@ export interface components {
       /** Es Comun */
       es_comun?: boolean | null
     }
+    /** EnCarrito */
+    EnCarrito: {
+      /** Producto Id */
+      producto_id: number
+      /**
+       * Cantidad
+       * @default 1
+       */
+      cantidad: number
+    }
     /**
      * EstadoProductoEnum
      * @enum {string}
@@ -827,6 +951,26 @@ export interface components {
       /** Nombre */
       nombre?: string | null
     }
+    /** LineaPackAdmin */
+    LineaPackAdmin: {
+      /** Pack Item Id */
+      pack_item_id: number
+      producto: components["schemas"]["ProductoReadAdmin"]
+      /** Cantidad */
+      cantidad: number
+      /** Es Regalo */
+      es_regalo: boolean
+    }
+    /** LineaPackVendedor */
+    LineaPackVendedor: {
+      /** Pack Item Id */
+      pack_item_id: number
+      producto: components["schemas"]["ProductoReadVendedor"]
+      /** Cantidad */
+      cantidad: number
+      /** Es Regalo */
+      es_regalo: boolean
+    }
     /** LoginCreate */
     LoginCreate: {
       /** Email */
@@ -882,6 +1026,103 @@ export interface components {
      * @enum {string}
      */
     NivelBateria: "alta" | "media" | "baja"
+    /** PackAplicadoAdmin */
+    PackAplicadoAdmin: {
+      pack: components["schemas"]["Referencia"]
+      /** Lineas */
+      lineas: components["schemas"]["LineaPackAdmin"][]
+    }
+    /**
+     * PackAplicadoVendedor
+     * @description Las líneas para sumar al carrito. Si falta stock para algún ítem, no se devuelve
+     *     nada: 409 con el mensaje.
+     */
+    PackAplicadoVendedor: {
+      pack: components["schemas"]["Referencia"]
+      /** Lineas */
+      lineas: components["schemas"]["LineaPackVendedor"][]
+    }
+    /**
+     * PackAplicar
+     * @description Lo que ya está en el carrito, para no volver a dar el mismo equipo (ni más unidades
+     *     de un accesorio de las que hay).
+     */
+    PackAplicar: {
+      /**
+       * En Carrito
+       * @default []
+       */
+      en_carrito: components["schemas"]["EnCarrito"][]
+    }
+    /** PackCreate */
+    PackCreate: {
+      /** Nombre */
+      nombre: string
+      /** Descripcion */
+      descripcion?: string | null
+      /** Items */
+      items: components["schemas"]["PackItemCreate"][]
+    }
+    /**
+     * PackItemCreate
+     * @description Un producto fijo del stock (`producto_id`) o una categoría (`categoria_id`), nunca
+     *     los dos. Con una categoría, al aplicar el pack se toma el primer disponible.
+     */
+    PackItemCreate: {
+      /** Producto Id */
+      producto_id?: number | null
+      /** Categoria Id */
+      categoria_id?: number | null
+      /**
+       * Cantidad
+       * @default 1
+       */
+      cantidad: number
+      /**
+       * Es Regalo
+       * @default false
+       */
+      es_regalo: boolean
+    }
+    /** PackItemRead */
+    PackItemRead: {
+      /** Id */
+      id: number
+      producto: components["schemas"]["ProductoEnPack"] | null
+      categoria: components["schemas"]["Referencia"] | null
+      /** Cantidad */
+      cantidad: number
+      /** Es Regalo */
+      es_regalo: boolean
+      /**
+       * Unidades Disponibles
+       * @description Cuántas unidades hay hoy para este ítem: las del producto fijo si está disponible, o las disponibles de la categoría.
+       */
+      unidades_disponibles: number
+    }
+    /** PackRead */
+    PackRead: {
+      /** Id */
+      id: number
+      /** Nombre */
+      nombre: string
+      /** Descripcion */
+      descripcion: string | null
+      /** Items */
+      items: components["schemas"]["PackItemRead"][]
+    }
+    /**
+     * PackUpdate
+     * @description Lo que no se manda queda como estaba. `items` reemplaza la lista entera.
+     */
+    PackUpdate: {
+      /** Nombre */
+      nombre?: string | null
+      /** Descripcion */
+      descripcion?: string | null
+      /** Items */
+      items?: components["schemas"]["PackItemCreate"][] | null
+    }
     /** Pagina[ClienteRead] */
     Pagina_ClienteRead_: {
       /** Items */
@@ -960,6 +1201,23 @@ export interface components {
        * @default []
        */
       defectos_nuevos: string[]
+    }
+    /**
+     * ProductoEnPack
+     * @description Lo justo para reconocer el producto fijo de un ítem. Sin precios: al aplicar el
+     *     pack se manda el producto completo.
+     */
+    ProductoEnPack: {
+      /** Id */
+      id: number
+      categoria: components["schemas"]["Referencia"]
+      modelo: components["schemas"]["Referencia"]
+      capacidad: components["schemas"]["Referencia"] | null
+      color: components["schemas"]["Referencia"] | null
+      /** Imei */
+      imei: string | null
+      condicion: components["schemas"]["Condicion"]
+      estado: components["schemas"]["EstadoProductoEnum"]
     }
     /**
      * ProductoReadAdmin
@@ -1283,6 +1541,36 @@ export interface components {
       input?: unknown
       /** Context */
       ctx?: Record<string, never>
+    }
+    /**
+     * VendedorCreate
+     * @description El nombre se guarda con la inicial de cada palabra en mayúscula, como el de los
+     *     clientes ("juan pérez" → "Juan Pérez").
+     */
+    VendedorCreate: {
+      /** Numero */
+      numero: number
+      /** Nombre */
+      nombre: string
+    }
+    /** VendedorRead */
+    VendedorRead: {
+      /** Id */
+      id: number
+      /** Numero */
+      numero: number
+      /** Nombre */
+      nombre: string
+    }
+    /**
+     * VendedorUpdate
+     * @description Lo que no se manda queda como estaba. Los dos son obligatorios: no se borran.
+     */
+    VendedorUpdate: {
+      /** Numero */
+      numero?: number | null
+      /** Nombre */
+      nombre?: string | null
     }
   }
   responses: never
@@ -3209,6 +3497,353 @@ export interface operations {
         }
         content: {
           "application/json": components["schemas"]["ClienteRead"]
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"]
+        }
+      }
+    }
+  }
+  listar_packs_get: {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          "application/json": components["schemas"]["PackRead"][]
+        }
+      }
+    }
+  }
+  crear_packs_post: {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["PackCreate"]
+      }
+    }
+    responses: {
+      /** @description Successful Response */
+      201: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          "application/json": components["schemas"]["PackRead"]
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"]
+        }
+      }
+    }
+  }
+  obtener_packs__pack_id__get: {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        pack_id: number
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          "application/json": components["schemas"]["PackRead"]
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"]
+        }
+      }
+    }
+  }
+  eliminar_packs__pack_id__delete: {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        pack_id: number
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      204: {
+        headers: {
+          [name: string]: unknown
+        }
+        content?: never
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"]
+        }
+      }
+    }
+  }
+  actualizar_packs__pack_id__patch: {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        pack_id: number
+      }
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["PackUpdate"]
+      }
+    }
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          "application/json": components["schemas"]["PackRead"]
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"]
+        }
+      }
+    }
+  }
+  aplicar_packs__pack_id__aplicar_post: {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        pack_id: number
+      }
+      cookie?: never
+    }
+    requestBody?: {
+      content: {
+        "application/json": components["schemas"]["PackAplicar"] | null
+      }
+    }
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          "application/json":
+            | components["schemas"]["PackAplicadoAdmin"]
+            | components["schemas"]["PackAplicadoVendedor"]
+        }
+      }
+      /** @description No hay stock para algún ítem: no se agrega nada. */
+      409: {
+        headers: {
+          [name: string]: unknown
+        }
+        content?: never
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"]
+        }
+      }
+    }
+  }
+  listar_vendedores_get: {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          "application/json": components["schemas"]["VendedorRead"][]
+        }
+      }
+    }
+  }
+  crear_vendedores_post: {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["VendedorCreate"]
+      }
+    }
+    responses: {
+      /** @description Successful Response */
+      201: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          "application/json": components["schemas"]["VendedorRead"]
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"]
+        }
+      }
+    }
+  }
+  por_numero_vendedores_numero__numero__get: {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        numero: number
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          "application/json": components["schemas"]["VendedorRead"]
+        }
+      }
+      /** @description Vendedor no registrado. */
+      404: {
+        headers: {
+          [name: string]: unknown
+        }
+        content?: never
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"]
+        }
+      }
+    }
+  }
+  eliminar_vendedores__vendedor_id__delete: {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        vendedor_id: number
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      204: {
+        headers: {
+          [name: string]: unknown
+        }
+        content?: never
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"]
+        }
+      }
+    }
+  }
+  actualizar_vendedores__vendedor_id__patch: {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        vendedor_id: number
+      }
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["VendedorUpdate"]
+      }
+    }
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          "application/json": components["schemas"]["VendedorRead"]
         }
       }
       /** @description Validation Error */
