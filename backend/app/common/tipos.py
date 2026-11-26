@@ -36,9 +36,28 @@ def _validar_digitos(minimo: int, maximo: int, nombre: str):
     return validar
 
 
+def _sin_separadores(caracteres: str):
+    """Saca los separadores con los que se suele escribir el número: `30.123.456`,
+    `+54 9 11 5555-1234`. Lo que queda tiene que ser solo dígitos."""
+    patron = re.compile(f"[{re.escape(caracteres)}\\s]")
+
+    def limpiar(valor: object) -> object:
+        return patron.sub("", valor) if isinstance(valor, str) else valor
+
+    return limpiar
+
+
 IMEI = Annotated[str, AfterValidator(_validar_imei)]
-DNI = Annotated[str, AfterValidator(_validar_digitos(7, 8, "DNI"))]
-Telefono = Annotated[str, AfterValidator(_validar_digitos(8, 15, "teléfono"))]
+DNI = Annotated[
+    str,
+    BeforeValidator(_sin_separadores(".-")),
+    AfterValidator(_validar_digitos(7, 8, "DNI")),
+]
+Telefono = Annotated[
+    str,
+    BeforeValidator(_sin_separadores(".-()+")),
+    AfterValidator(_validar_digitos(8, 15, "teléfono")),
+]
 
 
 _MILES = re.compile(r"^\d{1,3}(\.\d{3})+$")

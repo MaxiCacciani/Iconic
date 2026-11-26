@@ -1,9 +1,20 @@
-from collections.abc import Sequence
+from collections.abc import Collection, Sequence
 
 from pydantic import BaseModel, Field
 from sqlmodel import Session, SQLModel, func, select
 
 from app.core.excepciones import NoEncontrado
+
+# Cómo se nombra, en un mensaje, a las filas de las tablas que apuntan a otra.
+_NOMBRE_TABLA = {
+    "producto_defectos": "productos",
+    "pack_items": "packs",
+    "venta_items": "ventas",
+    "reserva_items": "reservas",
+    "tipos_categoria": "tipos de categoría",
+    "estados_reclamo": "estados de reclamo",
+    "metodos_pago": "métodos de pago",
+}
 
 
 class ParamsPagina(BaseModel):
@@ -67,3 +78,24 @@ class RepositorioBase[M: SQLModel]:
     def eliminar(self, entidad: M) -> None:
         self.session.delete(entidad)
         self.session.flush()
+
+    def usos(self, entidad: M, ignorar: Collection[str] = ()) -> list[tuple[str, int]]:
+        """Qué tablas apuntan a esta fila y cuántas veces, leído de las claves foráneas.
+
+        Así, cuando una fase suma una tabla que apunta a otra (una venta a su cliente, un
+        producto a su modelo), este chequeo la cubre sola. `ignorar`: tablas cuyas filas se
+        van con la que se borra (por ejemplo, las asignaciones de los modelos), así que no
+        cuentan como uso.
+        """
+        tabla = self.modelo.__table__  # type: ignore[attr-defined]
+        usos: list[tuple[str, int]] = []
+        for otra in SQLModel.metadata.sorted_tables:
+            for fk in otra.foreign_keys:
+                if fk.column.table is not tabla or otra.name in ignorar:
+                    continue
+                cantidad = self.session.exec(
+                    select(func.count()).select_from(otra).where(fk.parent == entidad.id)  # type: ignore[attr-defined]
+                ).one()
+                if cantidad:
+                    usos.append((_NOMBRE_TABLA.get(otra.name, otra.name), cantidad))
+        return usos

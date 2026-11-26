@@ -23,6 +23,8 @@ export type Seccion = {
   icono: Icon
   grupo: "Operación" | "Administración"
   cargar: () => Promise<ComponentType>
+  /** La pantalla de un elemento (`/clientes/37`), con el mismo permiso que la sección. */
+  detalle?: () => Promise<ComponentType>
 }
 
 // El orden de esta lista es el orden del menú.
@@ -58,6 +60,8 @@ export const SECCIONES: Seccion[] = [
     icono: UsersIcon,
     grupo: "Operación",
     cargar: () => import("@/features/clientes").then((m) => m.ClientesPage),
+    detalle: () =>
+      import("@/features/clientes").then((m) => m.FichaClientePage),
   },
   {
     permiso: "reservas",

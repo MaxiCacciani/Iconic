@@ -27,3 +27,25 @@ export function formatearFecha(fecha: string): string {
   const [anio, mes, dia] = fecha.slice(0, 10).split("-")
   return `${dia}/${mes}/${anio}`
 }
+
+/** `"30123456"` → `30.123.456`. El DNI llega solo con dígitos. */
+export function formatearDNI(dni: string): string {
+  return dni.replace(/\B(?=(\d{3})+(?!\d))/g, ".")
+}
+
+const diaEnArgentina = new Intl.DateTimeFormat("es-AR", {
+  day: "2-digit",
+  month: "2-digit",
+  year: "numeric",
+  timeZone: "America/Argentina/Buenos_Aires",
+})
+
+/** Un instante (`"2026-11-25T02:30:00Z"`) → el día en Argentina: `24/11/2026`. Para las
+ * fechas sin hora, `formatearFecha`. */
+export function formatearDiaDe(instante: string): string {
+  // Sin zona (SQLite la pierde), el instante está en UTC, como lo guarda la API.
+  const conZona = /(Z|[+-]\d{2}:?\d{2})$/.test(instante)
+    ? instante
+    : `${instante}Z`
+  return diaEnArgentina.format(new Date(conZona))
+}
