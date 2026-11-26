@@ -33,6 +33,15 @@ docker compose exec api python -m app.scripts.crear_admin --nombre "Admin" --ema
 El esquema lo crea `backend/sql/schema.sql` la primera vez que se levanta el volumen. Los catálogos iniciales (categorías, proveedores, métodos de pago, etc.) los carga la API al arrancar, desde `app/modules/catalogos/semilla.py`, solo en las tablas que estén vacías.
 Si cambia el esquema: `docker compose down -v` y volver a levantar. Si a la base le falta alguna tabla, la API no arranca y el log dice cuáles; para no perder datos, se pueden crear a mano con su `CREATE TABLE` de `schema.sql`.
 
+## Datos de prueba
+
+Carga usuarios (`admin@iconic.com` y `vendedor@iconic.com`, contraseña `iconic123`), el TC de hoy, catálogos ampliados (modelos, capacidades y colores con sus asignaciones, proveedores, localidades, defectos, estados de reclamo y 2 categorías nuevas) y 92 productos de todas las categorías. Se puede correr más de una vez: no duplica catálogos y solo carga productos si la tabla está vacía (`--productos-igual` suma otra tanda).
+
+```bash
+docker compose exec api python -m app.scripts.datos_prueba   # con Docker
+cd backend && uv run python -m app.scripts.datos_prueba      # local
+```
+
 ## Frontend local
 
 ```bash
