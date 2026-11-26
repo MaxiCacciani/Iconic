@@ -44,7 +44,9 @@ export function useEliminarPack() {
   })
 }
 
-/** Para el carrito de la venta (Fase 7): no guarda nada, solo devuelve qué agregar. */
+/** Para el carrito de la venta (Fase 7): no guarda nada, solo devuelve qué agregar. Si falta
+ * stock de algún ítem falla con un 409 y no hay nada que agregar: el mensaje de la API
+ * ("No se pudo agregar el pack por falta de stock de …") va tal cual al usuario. */
 export function useAplicarPack() {
   return useMutation({
     mutationFn: ({ id, enCarrito }: { id: number; enCarrito?: EnCarrito[] }) =>

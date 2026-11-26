@@ -108,12 +108,6 @@ class PackAplicar(BaseModel):
     en_carrito: list[EnCarrito] = []
 
 
-class Faltante(BaseModel):
-    pack_item_id: int
-    faltan: int = Field(description="Unidades que no se pudieron agregar.")
-    mensaje: str
-
-
 class LineaPackVendedor(BaseModel):
     pack_item_id: int
     producto: ProductoReadVendedor
@@ -129,15 +123,13 @@ class LineaPackAdmin(BaseModel):
 
 
 class PackAplicadoVendedor(BaseModel):
-    """Las líneas para sumar al carrito y lo que no se pudo agregar. Un pack que no se
-    puede completar no es un error: se agrega lo que hay y se avisa lo que falta."""
+    """Las líneas para sumar al carrito. Si falta stock para algún ítem, no se devuelve
+    nada: 409 con el mensaje."""
 
     pack: Referencia
     lineas: list[LineaPackVendedor]
-    faltantes: list[Faltante]
 
 
 class PackAplicadoAdmin(BaseModel):
     pack: Referencia
     lineas: list[LineaPackAdmin]
-    faltantes: list[Faltante]

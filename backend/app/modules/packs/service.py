@@ -8,9 +8,11 @@ Decisiones:
 - El nombre del pack no se repite, sin distinguir mayúsculas (se elige de una lista).
 - Un producto fijo no se repite dentro del pack; uno vendido no se puede sumar (si ya
   estaba, puede quedar: al aplicar se avisa que ya se vendió). Un equipo es una sola
-  unidad; de un accesorio no se piden más unidades de las que tiene.
-- Aplicar un pack que no se puede completar no es un error: se agrega lo que hay y se
-  devuelve lo que falta, para que el front lo avise.
+  unidad.
+- El pack no reserva ni mira el stock al guardarse: la cantidad es lo que trae el combo.
+  Si hoy no alcanza, se ve en la tarjeta y aplicarlo se rechaza.
+- Un pack va entero o no va: si no hay stock para algún ítem (vendido, reservado, ya en
+  el carrito o sin unidades), aplicar devuelve 409 con lo que falta y no agrega nada.
 - "El primer disponible" de una categoría es el que lleva más tiempo en el stock.
 """
 
@@ -18,14 +20,13 @@ from collections import defaultdict
 from collections.abc import Sequence
 
 from app.common.enums import EstadoProductoEnum
-from app.core.excepciones import ErrorDeCampo, NoEncontrado
+from app.core.excepciones import Conflicto, ErrorDeCampo, NoEncontrado
 from app.core.uow import UnidadDeTrabajo
 from app.modules.catalogos.models import Capacidad, Categoria, Color, Modelo
 from app.modules.packs import dominio
 from app.modules.packs.models import Pack, PackItem
 from app.modules.packs.repository import PackRepository
 from app.modules.packs.schemas import (
-    Faltante,
     LineaPackAdmin,
     LineaPackVendedor,
     PackAplicadoAdmin,
@@ -49,10 +50,6 @@ _DISPONIBLE = EstadoProductoEnum.disponible
 
 def _ref(x: Categoria | Modelo | Capacidad | Color) -> Referencia:
     return Referencia(id=x.id, nombre=x.nombre)  # type: ignore[arg-type]
-
-
-def _faltan(n: int) -> str:
-    return "falta 1" if n == 1 else f"faltan {n}"
 
 
 class PackService:
@@ -139,6 +136,9 @@ class PackService:
         for linea in datos.en_carrito:
             ocupadas[linea.producto_id] += linea.cantidad
         reparto = dominio.repartir(pedidos, ocupadas)
+        # O va el pack entero o no va nada.
+        if reparto.faltantes:
+            raise Conflicto(self._sin_stock([i for i in pack.items if i.id in reparto.faltantes]))
 
         # Las líneas, en el orden del pack.
         orden = {item_id: n for n, item_id in enumerate(items)}
@@ -155,37 +155,24 @@ class PackService:
             )
             for a in asignaciones
         ]
-        faltantes = [
-            Faltante(
-                pack_item_id=item_id,
-                faltan=faltan,
-                mensaje=self._por_que_falta(items[item_id], faltan, ocupadas),
-            )
-            for item_id, faltan in sorted(reparto.faltantes.items(), key=lambda f: orden[f[0]])
-        ]
         Aplicado = PackAplicadoAdmin if con_costos else PackAplicadoVendedor
         return Aplicado(
             pack=Referencia(id=pack.id, nombre=pack.nombre),  # type: ignore[arg-type]
             lineas=lineas,  # type: ignore[arg-type]
-            faltantes=faltantes,
         )
 
     @staticmethod
-    def _por_que_falta(item: PackItem, faltan: int, ocupadas: dict[int, int]) -> str:
-        if item.producto is None:
-            nombre = item.categoria.nombre  # type: ignore[union-attr]
-            if faltan == item.cantidad:
-                return f"{nombre}: no hay disponibles."
-            return f"{nombre}: {_faltan(faltan)}, no hay más disponibles."
-        p = item.producto
-        nombre = f"{p.modelo.nombre} #{p.id}"
-        if p.estado == EstadoProductoEnum.vendido:
-            return f"{nombre}: ya se vendió."
-        if p.estado == EstadoProductoEnum.reservado:
-            return f"{nombre}: está reservado."
-        if ocupadas.get(p.id, 0) >= p.cantidad:
-            return f"{nombre}: ya está en el carrito."
-        return f"{nombre}: {_faltan(faltan)}, no hay más disponibles."
+    def _sin_stock(items: Sequence[PackItem]) -> str:
+        """Por ejemplo: "No se pudo agregar el pack por falta de stock de iPhone 15 #12 y
+        Cable." Una categoría repetida en el pack se nombra una sola vez."""
+        nombres = list(
+            dict.fromkeys(
+                f"{i.producto.modelo.nombre} #{i.producto.id}" if i.producto else i.categoria.nombre  # type: ignore[union-attr]
+                for i in items
+            )
+        )
+        lista = nombres[0] if len(nombres) == 1 else f"{', '.join(nombres[:-1])} y {nombres[-1]}"
+        return f"No se pudo agregar el pack por falta de stock de {lista}."
 
     # ─── Reglas ──────────────────────────────────────────────────────────────
     def _detalle(self, id: int) -> Pack:
@@ -216,20 +203,12 @@ class PackService:
             if producto.id in vistos:
                 raise ErrorDeCampo(campo, "Ese producto ya está en el pack.")
             vistos.add(producto.id)  # type: ignore[arg-type]
-            vendido = producto.estado == EstadoProductoEnum.vendido
-            if vendido and producto.id not in ya_estaban:
+            if producto.estado == EstadoProductoEnum.vendido and producto.id not in ya_estaban:
                 raise ErrorDeCampo(campo, f"El producto #{producto.id} ya se vendió.")
-            if not producto.modelo.categoria.tipo.por_cantidad:
-                if item.cantidad != 1:
-                    raise ErrorDeCampo(
-                        f"items.{n}.cantidad",
-                        "Es un equipo: va una sola unidad. Para sumar otro, agregá otro ítem.",
-                    )
-            elif not vendido and item.cantidad > producto.cantidad:
+            if not producto.modelo.categoria.tipo.por_cantidad and item.cantidad != 1:
                 raise ErrorDeCampo(
                     f"items.{n}.cantidad",
-                    f"Del producto #{producto.id} hay {producto.cantidad} "
-                    f"{'unidad' if producto.cantidad == 1 else 'unidades'}.",
+                    "Es un equipo: va una sola unidad. Para sumar otro, agregá otro ítem.",
                 )
 
     def _guardar_items(self, pack: Pack, items: list[PackItemCreate]) -> None:

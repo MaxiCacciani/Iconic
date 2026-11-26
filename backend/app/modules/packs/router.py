@@ -42,15 +42,19 @@ def obtener(pack_id: int, uow: UowDep) -> PackRead:
 
 # El Administrador primero: con los dos, la respuesta se valida contra el que tiene costos
 # solo si el service lo armó con costos (como en productos).
-@router.post("/{pack_id}/aplicar", response_model=PackAplicadoAdmin | PackAplicadoVendedor)
+@router.post(
+    "/{pack_id}/aplicar",
+    response_model=PackAplicadoAdmin | PackAplicadoVendedor,
+    responses={409: {"description": "No hay stock para algún ítem: no se agrega nada."}},
+)
 def aplicar(
     pack_id: int,
     uow: UowDep,
     usuario: Logueado,
     datos: Annotated[PackAplicar | None, Body()] = None,
 ) -> PackAplicadoAdmin | PackAplicadoVendedor:
-    """Los productos del pack que hay hoy en el stock, para sumar al carrito, y lo que no
-    se pudo agregar. No reserva nada: el stock se toca recién al vender."""
+    """Los productos del pack para sumar al carrito. Va entero o no va: si falta stock de
+    algo, 409. No reserva nada: el stock se toca recién al vender."""
     return PackService(uow).aplicar(
         pack_id, datos or PackAplicar(), con_costos=usuario.rol == Rol.admin
     )

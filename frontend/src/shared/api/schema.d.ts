@@ -608,8 +608,8 @@ export interface paths {
     put?: never
     /**
      * Aplicar
-     * @description Los productos del pack que hay hoy en el stock, para sumar al carrito, y lo que no
-     *     se pudo agregar. No reserva nada: el stock se toca recién al vender.
+     * @description Los productos del pack para sumar al carrito. Va entero o no va: si falta stock de
+     *     algo, 409. No reserva nada: el stock se toca recién al vender.
      */
     post: operations["aplicar_packs__pack_id__aplicar_post"]
     delete?: never
@@ -905,18 +905,6 @@ export interface components {
       /** Es Inicial */
       es_inicial?: boolean | null
     }
-    /** Faltante */
-    Faltante: {
-      /** Pack Item Id */
-      pack_item_id: number
-      /**
-       * Faltan
-       * @description Unidades que no se pudieron agregar.
-       */
-      faltan: number
-      /** Mensaje */
-      mensaje: string
-    }
     /** HTTPValidationError */
     HTTPValidationError: {
       /** Detail */
@@ -1043,20 +1031,16 @@ export interface components {
       pack: components["schemas"]["Referencia"]
       /** Lineas */
       lineas: components["schemas"]["LineaPackAdmin"][]
-      /** Faltantes */
-      faltantes: components["schemas"]["Faltante"][]
     }
     /**
      * PackAplicadoVendedor
-     * @description Las líneas para sumar al carrito y lo que no se pudo agregar. Un pack que no se
-     *     puede completar no es un error: se agrega lo que hay y se avisa lo que falta.
+     * @description Las líneas para sumar al carrito. Si falta stock para algún ítem, no se devuelve
+     *     nada: 409 con el mensaje.
      */
     PackAplicadoVendedor: {
       pack: components["schemas"]["Referencia"]
       /** Lineas */
       lineas: components["schemas"]["LineaPackVendedor"][]
-      /** Faltantes */
-      faltantes: components["schemas"]["Faltante"][]
     }
     /**
      * PackAplicar
@@ -3699,6 +3683,13 @@ export interface operations {
             | components["schemas"]["PackAplicadoAdmin"]
             | components["schemas"]["PackAplicadoVendedor"]
         }
+      }
+      /** @description No hay stock para algún ítem: no se agrega nada. */
+      409: {
+        headers: {
+          [name: string]: unknown
+        }
+        content?: never
       }
       /** @description Validation Error */
       422: {

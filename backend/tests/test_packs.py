@@ -156,11 +156,6 @@ def test_pack_sin_items_y_nombre_obligatorio(client, admin, stock):
             "cantidad",
             "Es un equipo: va una sola unidad. Para sumar otro, agregá otro ítem.",
         ),
-        (
-            {"producto_id": "cable_x3", "cantidad": 4},
-            "cantidad",
-            "Del producto #{id} hay 3 unidades.",
-        ),
         ({"categoria_id": "iphone", "cantidad": 0}, "cantidad", "Tiene que ser 1 o más."),
     ],
 )
@@ -170,6 +165,13 @@ def test_items_invalidos(client, admin, stock, item, campo, mensaje):
     assert r.status_code == 422
     id_ = item.get("producto_id")
     assert errores(r) == {f"items.1.{campo}": mensaje.format(id=id_)}
+
+
+def test_la_cantidad_no_se_valida_contra_el_stock(client, admin, stock):
+    """El pack dice qué trae; el stock se mira recién al aplicarlo."""
+    r = crear(client, admin, nombre="P", items=[{"producto_id": stock.cable_x3, "cantidad": 4}])
+    assert r.status_code == 201, r.text
+    assert r.json()["items"][0]["unidades_disponibles"] == 3
 
 
 def test_un_producto_fijo_no_se_repite(client, admin, stock):
@@ -263,7 +265,6 @@ def test_aplicar_no_repite_equipos(client, admin, stock):
     # El más antiguo primero, y el segundo ítem se lleva otro equipo. Ni el vendido ni el
     # reservado entran.
     assert lineas(r) == [(stock.iphone_a, 1, False), (stock.iphone_b, 1, True)]
-    assert r.json()["faltantes"] == []
     assert r.json()["pack"] == {"id": pack["id"], "nombre": "Dos iPhone"}
 
 
@@ -296,50 +297,50 @@ def test_aplicar_accesorios_por_cantidad(client, admin, stock):
     assert lineas(r) == [(stock.cable_x3, 1, True), (stock.cable_x5, 3, True)]
 
 
-def test_aplicar_avisa_lo_que_falta(client, admin, stock, session):
+def sin_stock(r) -> str:
+    assert r.status_code == 409, r.text
+    return r.json()["detail"]
+
+
+def test_aplicar_sin_stock_no_agrega_nada(client, admin, stock, session):
     items = [
+        {"categoria_id": stock.cable},
         {"producto_id": stock.iphone_a},
         {"producto_id": stock.iphone_b},
-        {"producto_id": stock.cable_x3, "cantidad": 3},
         {"categoria_id": stock.funda},
-        {"categoria_id": stock.iphone, "cantidad": 2},
+        {"categoria_id": stock.funda, "es_regalo": True},
     ]
     pack = crear(client, admin, nombre="P", items=items).json()
-    ids = [i["id"] for i in pack["items"]]
     session.get(Producto, stock.iphone_a).estado = EstadoProductoEnum.vendido
     session.get(Producto, stock.iphone_b).estado = EstadoProductoEnum.reservado
     session.commit()
 
-    r = aplicar(client, admin, pack["id"], [{"producto_id": stock.cable_x3, "cantidad": 2}])
-    assert r.status_code == 200
-    assert lineas(r) == [(stock.cable_x3, 1, False)]
-    assert r.json()["faltantes"] == [
-        {
-            "pack_item_id": ids[0],
-            "faltan": 1,
-            "mensaje": f"iPhone 15 #{stock.iphone_a}: ya se vendió.",
-        },
-        {
-            "pack_item_id": ids[1],
-            "faltan": 1,
-            "mensaje": f"iPhone 15 #{stock.iphone_b}: está reservado.",
-        },
-        {
-            "pack_item_id": ids[2],
-            "faltan": 2,
-            "mensaje": f"USB-C 1 m #{stock.cable_x3}: faltan 2, no hay más disponibles.",
-        },
-        {"pack_item_id": ids[3], "faltan": 1, "mensaje": "Funda/Case: no hay disponibles."},
-        {"pack_item_id": ids[4], "faltan": 2, "mensaje": "iPhone: no hay disponibles."},
-    ]
+    # El cable hay, pero el pack no va a medias. La categoría repetida se nombra una vez.
+    assert sin_stock(aplicar(client, admin, pack["id"])) == (
+        "No se pudo agregar el pack por falta de stock de "
+        f"iPhone 15 #{stock.iphone_a}, iPhone 15 #{stock.iphone_b} y Funda/Case."
+    )
+
+
+def test_aplicar_sin_unidades_suficientes(client, admin, stock):
+    items = [{"producto_id": stock.cable_x3, "cantidad": 3}]
+    pack = crear(client, admin, nombre="P", items=items).json()
+    r = aplicar(client, admin, pack["id"], [{"producto_id": stock.cable_x3, "cantidad": 1}])
+    assert sin_stock(r) == (
+        f"No se pudo agregar el pack por falta de stock de USB-C 1 m #{stock.cable_x3}."
+    )
+    # Con la categoría: hay 8 cables, se piden 9.
+    pack = crear(client, admin, nombre="Q", items=[{"categoria_id": stock.cable, "cantidad": 9}])
+    assert sin_stock(aplicar(client, admin, pack.json()["id"])) == (
+        "No se pudo agregar el pack por falta de stock de Cable."
+    )
 
 
 def test_aplicar_fijo_que_ya_esta_en_el_carrito(client, admin, stock):
     pack = crear(client, admin, nombre="P", items=[{"producto_id": stock.iphone_a}]).json()
     r = aplicar(client, admin, pack["id"], [{"producto_id": stock.iphone_a}])
-    assert (
-        r.json()["faltantes"][0]["mensaje"]
-        == f"iPhone 15 #{stock.iphone_a}: ya está en el carrito."
+    assert sin_stock(r) == (
+        f"No se pudo agregar el pack por falta de stock de iPhone 15 #{stock.iphone_a}."
     )
 
 
