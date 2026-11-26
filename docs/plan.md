@@ -10,8 +10,8 @@ Al cerrar una fase, marcala acá.
 - [x] Fase 1 — Login, sesión y usuarios
 - [x] Fase 2 — TC del día y esqueleto de Resumen
 - [x] Fase 3 — Catálogos
-- [ ] Fase 4 — Productos y stock ← **siguiente**
-- [ ] Fase 5 — Clientes
+- [x] Fase 4 — Productos y stock
+- [ ] Fase 5 — Clientes ← **siguiente**
 - [ ] Fase 6 — Vendedores y packs
 - [ ] Fase 7 — Ventas al contado y canje
 - [ ] Fase 8 — Cuotas, cobros y agenda
@@ -22,7 +22,7 @@ Al cerrar una fase, marcala acá.
 
 ## Estado actual (21/11/2026)
 
-**Verificado:** `uv run pytest` pasa 102 tests, `ruff` está limpio, y `npm run build`, `typecheck` y `oxlint` pasan sin errores ni avisos. `docker compose up` levanta todo y la app responde en `localhost:8080`.
+**Verificado:** `uv run pytest` pasa 157 tests, `ruff` está limpio, y `npm run build`, `typecheck` y `oxlint` pasan sin errores ni avisos. `docker compose up` levanta todo y la app responde en `localhost:8080`.
 
 **Fase 0:** completa. Además, `schema.sql` ya tiene las tablas del DER (26 al cerrar la fase; 28 desde que se sumaron `modelo_colores` y `modelo_capacidades`) (los catálogos iniciales pasaron a la semilla de la Fase 3). Las clases SQLModel solo existen para `usuarios`: las demás se escriben en su fase.
 
@@ -58,7 +58,22 @@ Al cerrar una fase, marcala acá.
   - Borrar un color, una capacidad o un modelo se lleva sus asignaciones: estar asignado no cuenta como "en uso". `usos()` saltea solo las tablas de `ASIGNACIONES` (`definiciones.py`), no cualquier clave en cascada.
   - En el front: columna "Colores y capacidades" en Modelos y la acción "Colores y capacidades…" en cada fila, que abre un `Sheet` con casillas.
   - Reglas (sección 2.1 y tabla de cambios), `schema.sql`, el DER (páginas 1 y 2) y 8 tests nuevos.
-- **Pendiente para la Fase 4:** decidir si se bloquea cambiar los datos de un tipo de categoría (o el tipo de una categoría) cuando ya hay productos cargados.
+- ~~Pendiente para la Fase 4~~: resuelto en la Fase 4 (ver abajo).
+
+**Fase 4:** completa y probada en el navegador con los dos roles, contra PostgreSQL (`schema.sql`).
+- `productos` y `producto_defectos` con SQLModel. `GET /productos` (filtros `estado`, `categoria_id`, `modelo_id`, `condicion`, `buscar` por IMEI o modelo, y paginación) y `GET /productos/{id}` para todos los logueados; `POST`, `PATCH` y `DELETE` solo para el admin (permiso nuevo `productos:editar`).
+- DTOs por rol: el Vendedor recibe `ProductoReadVendedor`, sin costo, ganancia ni margen; el admin, `ProductoReadAdmin`. Los montos traen su equivalencia en pesos con el TC del día (`null` sin TC).
+- `ProductoFactory` (`factory.py`) valida según el tipo de la categoría: IMEI obligatorio y sin duplicados en equipos con IMEI, batería solo si la lleva, controles y extras en consolas, cantidad mayor a 1 solo por cantidad. Rechaza los datos que el tipo no lleva. Capacidad y color tienen que estar entre las opciones del modelo (`CatalogoService.opciones_de_modelo`). Costo entre 0 y el precio. El `PATCH` valida el producto resultante entero.
+- State `EstadoProducto` (`estados.py`): `reservar`, `liberar`, `vender` y `devolver`, listos para las Fases 7 y 9. **Solo se edita o borra lo disponible** (uno reservado tiene una seña sobre su precio; uno vendido es historial). La API manda `editable` y el front ofrece las acciones según eso.
+- `dominio.py`: `nivel_bateria`, `ganancia`, `margen_pct` (sin costo o con costo 0 no hay margen) y `en_pesos`.
+- Defectos: `defecto_ids` (de la lista) y `defectos_nuevos` (escritos a mano). Uno escrito que ya existe sin importar mayúsculas se reusa; si no, se agrega a `defectos` con `es_comun = false`.
+- Los montos en USD (`USD`, `PrecioUSD`) aceptan el formato argentino, igual que `Pesos`.
+- **Decisión:** con productos cargados no se cambia qué datos lleva un tipo de categoría (`usa_imei`, `usa_bateria`, `usa_controles`, `por_cantidad`) ni el tipo de una categoría (422 en ese campo). El nombre sí. Se declara en `FijoConProductos` (`definiciones.py`).
+- Resumen suma `stock`: unidades disponibles y cuántas son nuevas (un accesorio por cantidad suma todas las suyas).
+- En el front: feature `productos` con el listado (filtros en la URL, búsqueda, paginación, batería con color y costo y margen solo si la API los manda), alta y edición en un `Sheet` con campos según el tipo de la categoría, color y capacidad pedidos con `?modelo_id=`, defectos de la lista o escritos, y borrado con confirmación. Tarjeta de stock en Resumen. Tokens `success` e `info` en `index.css` para la batería.
+- Tests: 25 de dominio y State, y 26 de API (tipos de categoría, IMEI, opciones del modelo, precio y costo, defectos, edición, borrado, estados, filtros, DTOs por rol, Resumen y el bloqueo en catálogos).
+- **IMEI único solo en el stock (decidido el 25/11/2026):** no se repite entre lo no vendido (disponible o reservado). Un equipo vendido puede volver a entrar con el mismo IMEI, porque las ventas apuntan al `producto_id`. Índice parcial `uq_productos_imei ... WHERE imei IS NOT NULL AND estado <> 'vendido'` en `schema.sql` y en el modelo, y `ProductoRepository.en_stock_por_imei` en la factory. En una base ya creada: `DROP INDEX uq_productos_imei;` y el `CREATE UNIQUE INDEX` de `schema.sql`.
+- "Otro" (reglas 2.1): un modelo, capacidad o color que no está se agrega desde Catálogos; el alta avisa y enlaza ahí si la categoría no tiene modelos.
 
 **Decisiones confirmadas (21/11/2026):**
 - Los usuarios se **desactivan, no se borran**, porque ventas y reservas guardan `usuario_id`.
@@ -166,7 +181,8 @@ Al cerrar una fase, marcala acá.
   - historial de ventas.
 - **Pruebas:** atomicidad (si falla un paso no queda nada grabado), stock después de vender y de borrar, y el Vendedor sin costos.
 - **Resumen:** ventas de hoy y de los últimos 7 días.
-- **Decisión pendiente antes de esta fase:** si no hay TC cargado, ¿la venta se bloquea?
+- **Sin TC del día no se vende (decidido el 25/11/2026):** `POST /ventas` lo rechaza. El wizard avisa antes de confirmar: al admin le ofrece cargarlo ahí mismo (`AvisoTipoCambio`); al Vendedor le indica que le pida a un Administrador que lo cargue. Lo mismo vale para la seña de una reserva (Fase 9), que también congela el TC.
+- **Borrar una venta con un equipo que ya volvió al stock:** con el IMEI único solo en el stock, si el equipo vendido volvió a entrar (por canje) con el mismo IMEI, devolverlo a `disponible` dejaría dos iguales y el índice lo frena. Hay que decidir el comportamiento (por ejemplo, rechazar el borrado con un mensaje claro) y testearlo.
 
 ## Fase 8 — Cuotas, cobros y agenda
 - **Backend:**
@@ -221,4 +237,6 @@ Al cerrar una fase, marcala acá.
 
 ## Decisiones pendientes
 1. **Migraciones:** el README ya usa `schema.sql` y `docker compose down -v` cuando cambia el esquema, así que todo indica que se descartó Alembic. Falta confirmarlo.
-2. **TC sin cargar en una venta:** se necesita la respuesta antes de la Fase 7.
+2. ~~TC sin cargar en una venta~~: decidido (ver Fase 7).
+3. ~~IMEI repetido con un equipo vendido~~: decidido (ver Fase 4).
+4. **Borrar una venta cuyo equipo volvió al stock por canje:** ver Fase 7.

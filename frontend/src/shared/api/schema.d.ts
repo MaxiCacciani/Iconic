@@ -486,6 +486,43 @@ export interface paths {
     patch: operations["actualizar_metodos_pago"]
     trace?: never
   }
+  "/productos": {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /** Listar */
+    get: operations["listar_productos_get"]
+    put?: never
+    /** Crear */
+    post: operations["crear_productos_post"]
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  "/productos/{producto_id}": {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /** Obtener */
+    get: operations["obtener_productos__producto_id__get"]
+    put?: never
+    post?: never
+    /** Eliminar */
+    delete: operations["eliminar_productos__producto_id__delete"]
+    options?: never
+    head?: never
+    /** Actualizar */
+    patch: operations["actualizar_productos__producto_id__patch"]
+    trace?: never
+  }
   "/tipo-cambio/hoy": {
     parameters: {
       query?: never
@@ -591,6 +628,11 @@ export interface components {
       /** Tipo Categoria Id */
       tipo_categoria_id?: number | null
     }
+    /**
+     * Condicion
+     * @enum {string}
+     */
+    Condicion: "nuevo" | "usado"
     /** DefectoCreate */
     DefectoCreate: {
       /** Descripcion */
@@ -600,6 +642,13 @@ export interface components {
        * @default true
        */
       es_comun: boolean
+    }
+    /** DefectoDeProducto */
+    DefectoDeProducto: {
+      /** Id */
+      id: number
+      /** Descripcion */
+      descripcion: string
     }
     /** DefectoRead */
     DefectoRead: {
@@ -617,6 +666,11 @@ export interface components {
       /** Es Comun */
       es_comun?: boolean | null
     }
+    /**
+     * EstadoProductoEnum
+     * @enum {string}
+     */
+    EstadoProductoEnum: "disponible" | "reservado" | "vendido"
     /** EstadoReclamoCreate */
     EstadoReclamoCreate: {
       /** Nombre */
@@ -738,6 +792,218 @@ export interface components {
       /** Capacidad Ids */
       capacidad_ids: number[]
     }
+    /**
+     * NivelBateria
+     * @description Solo indicación visual: >= 85 alta, 80-84 media, < 80 baja.
+     * @enum {string}
+     */
+    NivelBateria: "alta" | "media" | "baja"
+    /** Pagina[ProductoReadAdmin] */
+    Pagina_ProductoReadAdmin_: {
+      /** Items */
+      items: components["schemas"]["ProductoReadAdmin"][]
+      /** Total */
+      total: number
+      /** Pagina */
+      pagina: number
+      /** Tamanio */
+      tamanio: number
+    }
+    /** Pagina[ProductoReadVendedor] */
+    Pagina_ProductoReadVendedor_: {
+      /** Items */
+      items: components["schemas"]["ProductoReadVendedor"][]
+      /** Total */
+      total: number
+      /** Pagina */
+      pagina: number
+      /** Tamanio */
+      tamanio: number
+    }
+    /**
+     * ProductoCreate
+     * @description Qué datos lleva depende del tipo de la categoría del modelo: IMEI y batería, controles
+     *     y extras, o cantidad. Los que no corresponden van en `null` (o se omiten).
+     *
+     *     Defectos: `defecto_ids` son los elegidos de la lista y `defectos_nuevos`, los escritos a
+     *     mano (si ya existe uno igual, se usa ese).
+     */
+    ProductoCreate: {
+      /** Modelo Id */
+      modelo_id: number
+      /** Capacidad Id */
+      capacidad_id?: number | null
+      /** Color Id */
+      color_id?: number | null
+      /** Proveedor Id */
+      proveedor_id: number
+      condicion: components["schemas"]["Condicion"]
+      /** Imei */
+      imei?: string | null
+      /** Bateria */
+      bateria?: number | null
+      /** Controles */
+      controles?: number | null
+      /** Extras */
+      extras?: string | null
+      /**
+       * Cantidad
+       * @default 1
+       */
+      cantidad: number
+      /** Precio Usd */
+      precio_usd: number | string
+      /** Costo Usd */
+      costo_usd?: (number | string) | null
+      /**
+       * Defecto Ids
+       * @default []
+       */
+      defecto_ids: number[]
+      /**
+       * Defectos Nuevos
+       * @default []
+       */
+      defectos_nuevos: string[]
+    }
+    /**
+     * ProductoReadAdmin
+     * @description Sin costo cargado, costo, ganancia y margen van en `null`.
+     */
+    ProductoReadAdmin: {
+      /** Id */
+      id: number
+      categoria: components["schemas"]["Referencia"]
+      modelo: components["schemas"]["Referencia"]
+      capacidad: components["schemas"]["Referencia"] | null
+      color: components["schemas"]["Referencia"] | null
+      proveedor: components["schemas"]["Referencia"]
+      condicion: components["schemas"]["Condicion"]
+      estado: components["schemas"]["EstadoProductoEnum"]
+      /**
+       * Editable
+       * @description Si se puede editar o borrar en su estado (solo mientras está disponible).
+       */
+      editable: boolean
+      /** Imei */
+      imei: string | null
+      /** Bateria */
+      bateria: number | null
+      /** @description Color de la batería: alta (85 o más), media (80 a 84) o baja (menos de 80). */
+      bateria_nivel: components["schemas"]["NivelBateria"] | null
+      /** Controles */
+      controles: number | null
+      /** Extras */
+      extras: string | null
+      /** Cantidad */
+      cantidad: number
+      /** Precio Usd */
+      precio_usd: string
+      /** Precio Ars */
+      precio_ars: string | null
+      /** Defectos */
+      defectos: components["schemas"]["DefectoDeProducto"][]
+      /**
+       * Creado En
+       * Format: date-time
+       */
+      creado_en: string
+      /** Costo Usd */
+      costo_usd: string | null
+      /** Costo Ars */
+      costo_ars: string | null
+      /** Ganancia Usd */
+      ganancia_usd: string | null
+      /** Ganancia Ars */
+      ganancia_ars: string | null
+      /**
+       * Margen Pct
+       * @description Ganancia sobre costo, en %.
+       */
+      margen_pct: string | null
+    }
+    /** ProductoReadVendedor */
+    ProductoReadVendedor: {
+      /** Id */
+      id: number
+      categoria: components["schemas"]["Referencia"]
+      modelo: components["schemas"]["Referencia"]
+      capacidad: components["schemas"]["Referencia"] | null
+      color: components["schemas"]["Referencia"] | null
+      proveedor: components["schemas"]["Referencia"]
+      condicion: components["schemas"]["Condicion"]
+      estado: components["schemas"]["EstadoProductoEnum"]
+      /**
+       * Editable
+       * @description Si se puede editar o borrar en su estado (solo mientras está disponible).
+       */
+      editable: boolean
+      /** Imei */
+      imei: string | null
+      /** Bateria */
+      bateria: number | null
+      /** @description Color de la batería: alta (85 o más), media (80 a 84) o baja (menos de 80). */
+      bateria_nivel: components["schemas"]["NivelBateria"] | null
+      /** Controles */
+      controles: number | null
+      /** Extras */
+      extras: string | null
+      /** Cantidad */
+      cantidad: number
+      /** Precio Usd */
+      precio_usd: string
+      /** Precio Ars */
+      precio_ars: string | null
+      /** Defectos */
+      defectos: components["schemas"]["DefectoDeProducto"][]
+      /**
+       * Creado En
+       * Format: date-time
+       */
+      creado_en: string
+    }
+    /**
+     * ProductoUpdate
+     * @description Lo que no se manda queda como estaba. El producto resultante se valida completo, así
+     *     que al cambiar a un modelo de otro tipo hay que mandar en `null` lo que ya no lleva.
+     *     `defecto_ids` y `defectos_nuevos` reemplazan juntos la lista de defectos.
+     */
+    ProductoUpdate: {
+      /** Modelo Id */
+      modelo_id?: number | null
+      /** Capacidad Id */
+      capacidad_id?: number | null
+      /** Color Id */
+      color_id?: number | null
+      /** Proveedor Id */
+      proveedor_id?: number | null
+      condicion?: components["schemas"]["Condicion"] | null
+      /** Imei */
+      imei?: string | null
+      /** Bateria */
+      bateria?: number | null
+      /** Controles */
+      controles?: number | null
+      /** Extras */
+      extras?: string | null
+      /** Cantidad */
+      cantidad?: number | null
+      /** Precio Usd */
+      precio_usd?: (number | string) | null
+      /** Costo Usd */
+      costo_usd?: (number | string) | null
+      /** Defecto Ids */
+      defecto_ids?: number[] | null
+      /** Defectos Nuevos */
+      defectos_nuevos?: string[] | null
+    }
+    /** Referencia */
+    Referencia: {
+      /** Id */
+      id: number
+      /** Nombre */
+      nombre: string
+    }
     /** ResumenRead */
     ResumenRead: {
       /**
@@ -747,6 +1013,7 @@ export interface components {
       fecha: string
       /** Avisos */
       avisos: components["schemas"]["AvisoRead"][]
+      stock: components["schemas"]["StockRead"]
     }
     /**
      * Rol
@@ -764,6 +1031,16 @@ export interface components {
       rol: components["schemas"]["Rol"]
       /** Permisos */
       permisos: string[]
+    }
+    /**
+     * StockRead
+     * @description En unidades, no en filas: un accesorio por cantidad suma todas las suyas.
+     */
+    StockRead: {
+      /** Disponibles */
+      disponibles: number
+      /** Nuevas */
+      nuevas: number
     }
     /**
      * TipoAviso
@@ -2505,6 +2782,176 @@ export interface operations {
         }
         content: {
           "application/json": components["schemas"]["MetodoPagoRead"]
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"]
+        }
+      }
+    }
+  }
+  listar_productos_get: {
+    parameters: {
+      query?: {
+        pagina?: number
+        tamanio?: number
+        estado?: components["schemas"]["EstadoProductoEnum"] | null
+        categoria_id?: number | null
+        modelo_id?: number | null
+        condicion?: components["schemas"]["Condicion"] | null
+        /** @description Parte del IMEI o del modelo */
+        buscar?: string | null
+      }
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          "application/json":
+            | components["schemas"]["Pagina_ProductoReadAdmin_"]
+            | components["schemas"]["Pagina_ProductoReadVendedor_"]
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"]
+        }
+      }
+    }
+  }
+  crear_productos_post: {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["ProductoCreate"]
+      }
+    }
+    responses: {
+      /** @description Successful Response */
+      201: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          "application/json": components["schemas"]["ProductoReadAdmin"]
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"]
+        }
+      }
+    }
+  }
+  obtener_productos__producto_id__get: {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        producto_id: number
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          "application/json":
+            | components["schemas"]["ProductoReadAdmin"]
+            | components["schemas"]["ProductoReadVendedor"]
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"]
+        }
+      }
+    }
+  }
+  eliminar_productos__producto_id__delete: {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        producto_id: number
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      204: {
+        headers: {
+          [name: string]: unknown
+        }
+        content?: never
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"]
+        }
+      }
+    }
+  }
+  actualizar_productos__producto_id__patch: {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        producto_id: number
+      }
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["ProductoUpdate"]
+      }
+    }
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          "application/json": components["schemas"]["ProductoReadAdmin"]
         }
       }
       /** @description Validation Error */

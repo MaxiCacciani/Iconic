@@ -37,6 +37,17 @@ export const catalogosApi = {
       `/catalogos/${slug}${categoriaId ? `?categoria_id=${categoriaId}` : ""}`,
       { signal }
     ),
+  /** Los colores (o capacidades) que se ofrecen al cargar un producto de ese modelo:
+   * sus asignados o, si no tiene, todos los de su categoría. Lo decide la API. */
+  opcionesDeModelo: (
+    slug: "colores" | "capacidades",
+    modeloId: number,
+    signal?: AbortSignal
+  ) =>
+    pedir<ItemPorCatalogo[typeof slug][]>(
+      `/catalogos/${slug}?modelo_id=${modeloId}`,
+      { signal }
+    ),
   crear: (slug: Slug, datos: DatosItem) =>
     pedir<ItemCatalogo>(`/catalogos/${slug}`, { method: "POST", body: datos }),
   actualizar: (slug: Slug, id: number, cambios: DatosItem) =>

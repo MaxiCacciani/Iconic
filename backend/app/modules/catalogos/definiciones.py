@@ -13,7 +13,7 @@ from collections.abc import Callable
 from dataclasses import dataclass, field
 
 from pydantic import BaseModel
-from sqlmodel import SQLModel
+from sqlmodel import Session, SQLModel
 
 from app.core.excepciones import ErrorDeCampo
 from app.modules.catalogos import schemas as s
@@ -53,6 +53,21 @@ class Marca:
 
 
 @dataclass(frozen=True)
+class FijoConProductos:
+    """Campos que no se cambian si ya hay productos que dependen de la fila.
+
+    Cambiar qué datos lleva un tipo de categoría (o el tipo de una categoría) dejaría a
+    los productos cargados con datos que ya no corresponden: un iPhone sin IMEI o un
+    accesorio con batería. `contar` dice cuántos productos dependen de la fila.
+    """
+
+    campos: tuple[str, ...]
+    contar: Callable[[Session, int], int]
+    mensaje: str
+    """Con `{}` para la cantidad: "1 producto cargado", "3 productos cargados"."""
+
+
+@dataclass(frozen=True)
 class Definicion:
     slug: str
     titulo: str
@@ -68,6 +83,7 @@ class Definicion:
     validar: Callable[[SQLModel], None] | None = None
     con_asignaciones: bool = False
     """Modelos: al listarlos se cargan sus colores y capacidades (ver `ASIGNACIONES`)."""
+    fijo_con_productos: FijoConProductos | None = None
 
 
 @dataclass(frozen=True)
@@ -104,6 +120,19 @@ def _validar_tipo_categoria(tipo: SQLModel) -> None:
         )
 
 
+def _productos_de_tipo(session: Session, tipo_id: int) -> int:
+    # Import diferido: productos depende de catálogos, no al revés.
+    from app.modules.productos.repository import ProductoRepository
+
+    return ProductoRepository(session).de_tipo_categoria(tipo_id)
+
+
+def _productos_de_categoria(session: Session, categoria_id: int) -> int:
+    from app.modules.productos.repository import ProductoRepository
+
+    return ProductoRepository(session).de_categoria(categoria_id)
+
+
 _CATEGORIA = Referencia(Categoria, "Esa categoría no existe.")
 
 DEFINICIONES: list[Definicion] = [
@@ -116,6 +145,12 @@ DEFINICIONES: list[Definicion] = [
         leer=s.TipoCategoriaRead,
         repetido="Ya hay un tipo de categoría con ese nombre.",
         validar=_validar_tipo_categoria,
+        fijo_con_productos=FijoConProductos(
+            campos=("usa_imei", "usa_bateria", "usa_controles", "por_cantidad"),
+            contar=_productos_de_tipo,
+            mensaje="No se puede cambiar qué datos lleva: ya hay {} de este tipo. "
+            "Solo se puede cambiar el nombre.",
+        ),
     ),
     Definicion(
         slug="categorias",
@@ -128,6 +163,11 @@ DEFINICIONES: list[Definicion] = [
         referencias={
             "tipo_categoria_id": Referencia(TipoCategoria, "Ese tipo de categoría no existe.")
         },
+        fijo_con_productos=FijoConProductos(
+            campos=("tipo_categoria_id",),
+            contar=_productos_de_categoria,
+            mensaje="No se puede cambiar el tipo: ya hay {} en esta categoría.",
+        ),
     ),
     Definicion(
         slug="modelos",

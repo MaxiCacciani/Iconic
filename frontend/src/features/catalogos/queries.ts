@@ -12,6 +12,8 @@ export const catalogosKeys = {
   catalogo: (slug: Slug) => [...catalogosKeys.todo, slug] as const,
   lista: (slug: Slug, categoriaId?: number) =>
     [...catalogosKeys.catalogo(slug), { categoriaId }] as const,
+  deModelo: (slug: Slug, modeloId?: number) =>
+    [...catalogosKeys.catalogo(slug), { modeloId }] as const,
 }
 
 /** Un catálogo completo o, en modelos, capacidades y colores, solo los de una categoría. */
@@ -25,6 +27,20 @@ export function useCatalogoQuery<S extends Slug>(
     queryFn: ({ signal }) => catalogosApi.listar(slug, categoriaId, signal),
     enabled: habilitado,
     // Cambian poco: no hace falta pedirlos cada vez que se abre una pantalla.
+    staleTime: 5 * 60_000,
+  })
+}
+
+/** Lo que se ofrece al cargar un producto de ese modelo (colores o capacidades). */
+export function useOpcionesDeModeloQuery(
+  slug: "colores" | "capacidades",
+  modeloId: number | undefined
+) {
+  return useQuery({
+    queryKey: catalogosKeys.deModelo(slug, modeloId),
+    queryFn: ({ signal }) =>
+      catalogosApi.opcionesDeModelo(slug, modeloId as number, signal),
+    enabled: modeloId !== undefined,
     staleTime: 5 * 60_000,
   })
 }
@@ -64,7 +80,10 @@ export function useEliminarItem(slug: Slug) {
 
 /** Guarda los colores y las capacidades de un modelo, en una sola operación. */
 export function useAsignarAModelo() {
-  const invalidar = useInvalidar("modelos")
+  const queryClient = useQueryClient()
+  // También cambian las opciones de colores y capacidades que ofrece ese modelo.
+  const invalidar = () =>
+    queryClient.invalidateQueries({ queryKey: catalogosKeys.todo })
   return useMutation({
     mutationFn: ({
       modeloId,

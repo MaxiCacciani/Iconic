@@ -25,6 +25,7 @@ PERMISOS: dict[Rol, list[str]] = {
         "catalogos",
         "garantias",
         "tipo_cambio:editar",
+        "productos:editar",
         "ver_costos",
     ],
     Rol.vendedor: ["resumen", "productos", "clientes", "ventas", "reservas", "garantias"],

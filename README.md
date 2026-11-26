@@ -31,7 +31,7 @@ docker compose exec api python -m app.scripts.crear_admin --nombre "Admin" --ema
 ```
 
 El esquema lo crea `backend/sql/schema.sql` la primera vez que se levanta el volumen. Los catálogos iniciales (categorías, proveedores, métodos de pago, etc.) los carga la API al arrancar, desde `app/modules/catalogos/semilla.py`, solo en las tablas que estén vacías.
-Si cambia el esquema: `docker compose down -v` y volver a levantar.
+Si cambia el esquema: `docker compose down -v` y volver a levantar. Si a la base le falta alguna tabla, la API no arranca y el log dice cuáles; para no perder datos, se pueden crear a mano con su `CREATE TABLE` de `schema.sql`.
 
 ## Frontend local
 

@@ -28,6 +28,9 @@ class Categoria(SQLModel, table=True):
     nombre: str = Field(unique=True)
     tipo_categoria_id: int = Field(foreign_key="tipos_categoria.id")
 
+    # Qué datos llevan sus productos (IMEI, batería, controles o cantidad).
+    tipo: TipoCategoria = Relationship()
+
 
 class ModeloColor(SQLModel, table=True):
     """Qué colores de su categoría tiene cada modelo (el iPhone 15 no vino en verde alpino).
@@ -62,6 +65,7 @@ class Modelo(SQLModel, table=True):
     categoria_id: int = Field(foreign_key="categorias.id")
     nombre: str
 
+    categoria: Categoria = Relationship()
     # Se cargan cuando se usan; el listado de modelos los trae juntos (`selectinload`).
     colores: list["Color"] = Relationship(back_populates="modelos", link_model=ModeloColor)
     capacidades: list["Capacidad"] = Relationship(
