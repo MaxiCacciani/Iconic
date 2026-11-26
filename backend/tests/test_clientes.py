@@ -60,21 +60,71 @@ def test_solo_el_nombre_es_obligatorio(client, vendedor):
     assert "nombre" in errores(r)
 
 
+SOLO_NUMEROS_TEL = (
+    "El teléfono solo puede tener números (también se aceptan espacios, guiones, "
+    "paréntesis y el +)."
+)
+SOLO_NUMEROS_DNI = (
+    "El DNI solo puede tener números (también se aceptan puntos, espacios y guiones)."
+)
+
+
 @pytest.mark.parametrize(
-    "campo,valor",
+    "campo,valor,mensaje",
     [
-        ("dni", "123456"),  # 6 dígitos
-        ("dni", "123456789"),  # 9 dígitos
-        ("dni", "30a12345"),
-        ("telefono", "1234567"),  # 7 dígitos
-        ("telefono", "1" * 16),
-        ("telefono", "341-CASA"),
+        # Con letras se avisa eso, no un error de longitud.
+        ("dni", "30a12345", SOLO_NUMEROS_DNI),
+        ("dni", "30/123/456", SOLO_NUMEROS_DNI),
+        ("telefono", "341-CASA", SOLO_NUMEROS_TEL),
+        ("telefono", "341 555 1234 int. 2", SOLO_NUMEROS_TEL),
+        # Solo números (los separadores no cuentan), pero con otra longitud.
+        ("dni", "123.456", "El DNI tiene que tener 7 u 8 dígitos y tiene 6."),
+        ("dni", "123456789", "El DNI tiene que tener 7 u 8 dígitos y tiene 9."),
+        ("telefono", "341 555", "El teléfono tiene que tener entre 8 y 15 dígitos y tiene 6."),
+        (
+            "telefono",
+            "+54 9 (341) 555-1234-999",
+            "El teléfono tiene que tener entre 8 y 15 dígitos y tiene 16.",
+        ),
     ],
 )
-def test_dni_y_telefono_invalidos(client, admin, campo, valor):
+def test_dni_y_telefono_invalidos(client, admin, campo, valor, mensaje):
     r = crear(client, admin, nombre="Ana", **{campo: valor})
     assert r.status_code == 422
-    assert campo in errores(r)
+    assert errores(r)[campo] == mensaje
+
+
+@pytest.mark.parametrize(
+    "escrito,guardado",
+    [
+        ("juan pérez", "Juan Pérez"),
+        ("JUAN   PÉREZ", "Juan Pérez"),  # también junta los espacios repetidos
+        ("maría de los ángeles", "María de los Ángeles"),  # partículas en minúscula…
+        ("de la fuente ana", "De la Fuente Ana"),  # …salvo al principio
+        ("ana pérez-garcía", "Ana Pérez-García"),
+        ("o'brien", "O'Brien"),
+        ("ñandú", "Ñandú"),
+    ],
+)
+def test_nombre_con_iniciales_en_mayuscula(client, vendedor, escrito, guardado):
+    cliente = crear(client, vendedor, nombre=escrito).json()
+    assert cliente["nombre"] == guardado
+    # Al editar, igual.
+    r = client.patch(
+        f"/clientes/{cliente['id']}",
+        json={"nombre": escrito.upper()},
+        headers=auth_header(vendedor),
+    )
+    assert r.json()["nombre"] == guardado
+
+
+def test_largo_del_nombre(client, admin):
+    assert crear(client, admin, nombre="x" * 100).status_code == 201
+    r = crear(client, admin, nombre="x" * 101)
+    assert r.status_code == 422
+    assert errores(r)["nombre"] == "El nombre puede tener hasta 100 caracteres y tiene 101."
+    # Los espacios de los bordes no cuentan.
+    assert crear(client, admin, nombre=f"  {'y' * 100}  ").status_code == 201
 
 
 def test_dni_unico(client, admin, vendedor):
@@ -147,7 +197,7 @@ def nombres(client, usuario, **params) -> list[str]:
 
 
 def test_lista_por_nombre_sin_distinguir_mayusculas(client, vendedor, varios):
-    assert nombres(client, vendedor) == ["ana gómez", "Juan Pérez", "Juana 100%", "Pedro Juárez"]
+    assert nombres(client, vendedor) == ["Ana Gómez", "Juan Pérez", "Juana 100%", "Pedro Juárez"]
 
 
 @pytest.mark.parametrize(
@@ -157,9 +207,9 @@ def test_lista_por_nombre_sin_distinguir_mayusculas(client, vendedor, varios):
         ("pérez juan", ["Juan Pérez"]),  # cada palabra, en cualquier orden
         ("perez", ["Juan Pérez"]),  # sin distinguir tildes…
         ("JUÁREZ", ["Pedro Juárez"]),  # …ni mayúsculas, con o sin tilde
-        ("GOMEZ", ["ana gómez"]),
+        ("GOMEZ", ["Ana Gómez"]),
         ("30.123", ["Juan Pérez"]),  # parte del DNI, con o sin puntos
-        ("999", ["ana gómez"]),
+        ("999", ["Ana Gómez"]),
         ("100%", ["Juana 100%"]),  # el % no es comodín
         ("zzz", []),
     ],

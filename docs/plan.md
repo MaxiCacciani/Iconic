@@ -22,7 +22,7 @@ Al cerrar una fase, marcala acá.
 
 ## Estado actual (25/11/2026)
 
-**Verificado:** `uv run pytest` pasa 189 tests, `ruff` está limpio, y `npm run build`, `typecheck` y `oxlint` pasan sin errores ni avisos. `docker compose up` levanta todo y la app responde en `localhost:8080`.
+**Verificado:** `uv run pytest` pasa 200 tests, `ruff` está limpio, y `npm run build`, `typecheck` y `oxlint` pasan sin errores ni avisos. `docker compose up` levanta todo y la app responde en `localhost:8080`.
 
 **Fase 0:** completa. Además, `schema.sql` ya tiene las tablas del DER (26 al cerrar la fase; 28 desde que se sumaron `modelo_colores` y `modelo_capacidades`) (los catálogos iniciales pasaron a la semilla de la Fase 3). Las clases SQLModel solo existen para `usuarios`: las demás se escriben en su fase.
 
@@ -78,7 +78,8 @@ Al cerrar una fase, marcala acá.
 **Fase 5:** completa y probada en el navegador con los dos roles (SQLite), y la API contra PostgreSQL (`schema.sql`).
 - `clientes` con SQLModel. `GET /clientes` (`buscar` por nombre o DNI, paginado y ordenado por nombre) y `GET /clientes/{id}` (la ficha), `POST` y `PATCH` para los dos roles; `DELETE` solo para el admin (permiso nuevo `clientes:borrar`).
 - Búsqueda: cada palabra del nombre en cualquier orden, sin distinguir mayúsculas ni tildes ("perez juan" encuentra a "Juan Pérez"), con `replace()` anidados que andan igual en PostgreSQL y en SQLite. El DNI se busca por una parte, con o sin puntos.
-- Los Value Objects `DNI` y `Telefono` aceptan separadores (`30.123.456`, `+54 9 (341) 555-1234`) y guardan solo los dígitos. Un opcional en blanco es `null`.
+- Los Value Objects `DNI` y `Telefono` aceptan separadores (`30.123.456`, `+54 9 (341) 555-1234`) y guardan solo los dígitos. Un opcional en blanco es `null`. Con letras, el error dice que solo van números; la longitud se valida aparte y dice cuántos dígitos tiene (lo mismo en el IMEI).
+- El nombre tiene hasta 100 caracteres y se guarda con la inicial de cada palabra en mayúscula ("maría de los ángeles" → "María de los Ángeles"; las partículas van en minúscula salvo al principio).
 - DNI único con un 422 en el campo que nombra al otro cliente ("Ya hay un cliente con ese DNI: Juan Pérez (#1)."), para que el Vendedor lo encuentre en vez de duplicarlo. La localidad tiene que existir.
 - **Decisión:** un cliente con ventas, reservas o reclamos no se borra (409); de todos modos la base no lo dejaría. `usos()` pasó de `CatalogoRepository` a `RepositorioBase` y lee las claves foráneas, así que las Fases 7, 9 y 11 quedan cubiertas solas. Una localidad usada por un cliente tampoco se borra.
 - En el front: feature `clientes` con el listado (búsqueda en la URL, paginación), alta y edición en un `Sheet`, y la ficha en `/clientes/:id` (`Seccion.detalle` en `navegacion.ts` agrega rutas de detalle con el permiso de la sección). Alta desde el listado lleva a la ficha.

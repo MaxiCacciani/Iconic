@@ -3,15 +3,47 @@
 Los clientes no tienen costos: los dos roles reciben el mismo `ClienteRead`.
 """
 
+import re
 from datetime import datetime
 from typing import Annotated
 
-from pydantic import BaseModel, BeforeValidator, StringConstraints
+from pydantic import AfterValidator, BaseModel, BeforeValidator, StringConstraints
 
 from app.common.base import Pagina
 from app.common.tipos import DNI, Telefono
 
-Nombre = Annotated[str, StringConstraints(strip_whitespace=True, min_length=1, max_length=200)]
+LARGO_NOMBRE = 100
+
+# Van en minúscula salvo al principio: "María de los Ángeles", "Juan Pérez y Pérez".
+_PARTICULAS = {"de", "del", "la", "las", "los", "y", "e"}
+# Cada tramo de letras: así "pérez-garcía" queda "Pérez-García" y "o'brien", "O'Brien".
+_LETRAS = re.compile(r"[^\W\d_]+")
+
+
+def _capitalizar(valor: str) -> str:
+    """Cada palabra con la inicial en mayúscula y el resto en minúscula, con un solo
+    espacio entre palabras: "JUAN  pérez" → "Juan Pérez"."""
+    palabras = valor.lower().split()
+    return " ".join(
+        p if i > 0 and p in _PARTICULAS else _LETRAS.sub(lambda m: m[0].capitalize(), p)
+        for i, p in enumerate(palabras)
+    )
+
+
+def _validar_largo_nombre(valor: str) -> str:
+    if len(valor) > LARGO_NOMBRE:
+        raise ValueError(
+            f"El nombre puede tener hasta {LARGO_NOMBRE} caracteres y tiene {len(valor)}."
+        )
+    return valor
+
+
+Nombre = Annotated[
+    str,
+    StringConstraints(strip_whitespace=True, min_length=1),
+    AfterValidator(_capitalizar),
+    AfterValidator(_validar_largo_nombre),
+]
 
 
 def _vacio_es_nulo(valor: object) -> object:
