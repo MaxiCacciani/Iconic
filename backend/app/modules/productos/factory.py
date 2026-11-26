@@ -11,15 +11,19 @@ Reglas 2.1 y 2.2:
   si cambian o cambia el modelo.
 - Precio mayor a 0 y costo entre 0 y el precio.
 
-`desde_canje` (el equipo que entra por plan canje) se suma en la Fase 7.
+`desde_canje`: el equipo que entra por plan canje (reglas 4.5).
 """
 
+from decimal import Decimal
 from typing import Any
 
-from app.core.excepciones import ErrorDeCampo
+from sqlmodel import func, select
+
+from app.core.excepciones import ErrorDeCampo, ReglaInvalida
 from app.core.uow import UnidadDeTrabajo
 from app.modules.catalogos.definiciones import POR_SLUG
 from app.modules.catalogos.models import Defecto, Modelo, Proveedor
+from app.modules.catalogos.semilla import PROVEEDOR_CANJE
 from app.modules.catalogos.service import CatalogoService
 from app.modules.productos.models import Producto
 from app.modules.productos.repository import DefectoRepository, ProductoRepository
@@ -46,6 +50,25 @@ class ProductoFactory:
         producto.defectos = self._defectos(datos)
         return producto
 
+    def desde_canje(self, datos: dict[str, Any], valor: Decimal) -> Producto:
+        """El equipo que entrega el cliente: entra disponible, con precio = costo = valor
+        del canje y proveedor "Plan canje". El IMEI es opcional, pero si se carga se valida
+        igual. Todavía no está en la sesión."""
+        proveedor = self.session.exec(
+            select(Proveedor).where(func.lower(Proveedor.nombre) == PROVEEDOR_CANJE.lower())
+        ).first()
+        if proveedor is None:
+            raise ReglaInvalida(f"Falta el proveedor «{PROVEEDOR_CANJE}» en Catálogos.")
+        datos = datos | {
+            "proveedor_id": proveedor.id,
+            "precio_usd": valor,
+            "costo_usd": valor,
+            "cantidad": 1,
+        }
+        return Producto(
+            **self._validados(datos, producto_id=None, opciones=_OPCIONES, imei_obligatorio=False)
+        )
+
     def actualizar(self, producto: Producto, cambios: dict[str, Any]) -> Producto:
         """Aplica los cambios y valida el producto resultante completo."""
         datos = {campo: getattr(producto, campo) for campo in CAMPOS} | {
@@ -69,7 +92,11 @@ class ProductoFactory:
 
     # ─── Validación ──────────────────────────────────────────────────────────
     def _validados(
-        self, datos: dict[str, Any], producto_id: int | None, opciones: tuple[str, ...]
+        self,
+        datos: dict[str, Any],
+        producto_id: int | None,
+        opciones: tuple[str, ...],
+        imei_obligatorio: bool = True,
     ) -> dict[str, Any]:
         d = {campo: datos.get(campo) for campo in CAMPOS}
         for campo in _OBLIGATORIOS:
@@ -88,7 +115,7 @@ class ProductoFactory:
             self._opcion_del_modelo(d, "capacidad_id", "capacidades", modelo, "Esa capacidad")
         if "color_id" in opciones:
             self._opcion_del_modelo(d, "color_id", "colores", modelo, "Ese color")
-        self._segun_tipo(d, modelo, producto_id)
+        self._segun_tipo(d, modelo, producto_id, imei_obligatorio)
 
         if d["costo_usd"] is not None and d["costo_usd"] > d["precio_usd"]:
             raise ErrorDeCampo("costo_usd", "El costo no puede ser mayor al precio de venta.")
@@ -103,15 +130,19 @@ class ProductoFactory:
         if d[campo] not in {o.id for o in opciones}:  # type: ignore[attr-defined]
             raise ErrorDeCampo(campo, f"{que} no está entre las opciones de {modelo.nombre}.")
 
-    def _segun_tipo(self, d: dict[str, Any], modelo: Modelo, producto_id: int | None) -> None:
+    def _segun_tipo(
+        self, d: dict[str, Any], modelo: Modelo, producto_id: int | None, imei_obligatorio: bool
+    ) -> None:
         tipo = modelo.categoria.tipo
         categoria = modelo.categoria.nombre
 
         if tipo.usa_imei:
             if d["imei"] is None:
-                raise ErrorDeCampo("imei", f"El IMEI es obligatorio en {categoria}.")
-            repetido = self.productos.en_stock_por_imei(d["imei"])
-            if repetido is not None and repetido.id != producto_id:
+                if imei_obligatorio:
+                    raise ErrorDeCampo("imei", f"El IMEI es obligatorio en {categoria}.")
+            elif (repetido := self.productos.en_stock_por_imei(d["imei"])) and (
+                repetido.id != producto_id
+            ):
                 raise ErrorDeCampo(
                     "imei", f"Ese IMEI ya está en el stock: producto #{repetido.id}."
                 )

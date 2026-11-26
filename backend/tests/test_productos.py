@@ -425,7 +425,8 @@ def test_filtros_y_paginas(client, admin, datos, session):
     todos = ids()
     assert todos == sorted(todos, reverse=True)  # los últimos cargados, primero
 
-    session.get(Producto, todos[0]).vender()
+    vendido = session.get(Producto, todos[0])
+    vendido.vender(vendido.cantidad)
     session.commit()
     assert len(ids(estado="disponible")) == 2
     assert len(ids(estado="vendido")) == 1

@@ -86,11 +86,23 @@ class Producto(SQLModel, table=True):
     def liberar(self) -> None:
         self.estado = self.estado_actual.liberar()
 
-    def vender(self) -> None:
-        self.estado = self.estado_actual.vender()
+    def vender(self, cantidad: int = 1) -> None:
+        """Reglas 4.7: un equipo pasa a vendido. De un accesorio se descuentan las unidades
+        y la fila pasa a vendido recién cuando se vende todo (queda con esas unidades)."""
+        nuevo = self.estado_actual.vender()
+        if cantidad < self.cantidad:
+            self.cantidad -= cantidad
+        else:
+            self.estado = nuevo
 
-    def devolver(self) -> None:
-        self.estado = self.estado_actual.devolver()
+    def devolver(self, cantidad: int = 1) -> None:
+        """Reglas 4.9, al borrar la venta: una fila vendida vuelve con las unidades de esa
+        venta; a una que sigue en el stock se le suman."""
+        if self.estado == EstadoProductoEnum.vendido:
+            self.estado = self.estado_actual.devolver()
+            self.cantidad = cantidad
+        else:
+            self.cantidad += cantidad
 
     def verificar_editable(self) -> None:
         self.estado_actual.editar()

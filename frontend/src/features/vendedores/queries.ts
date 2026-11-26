@@ -5,12 +5,23 @@ import { vendedoresApi, type DatosVendedor } from "./api"
 export const vendedoresKeys = {
   todo: ["vendedores"] as const,
   lista: () => [...vendedoresKeys.todo, "lista"] as const,
+  numero: (numero: number) =>
+    [...vendedoresKeys.todo, "numero", numero] as const,
 }
 
 export function useVendedoresQuery() {
   return useQuery({
     queryKey: vendedoresKeys.lista(),
     queryFn: ({ signal }) => vendedoresApi.listar(signal),
+  })
+}
+
+/** Para la venta: el nombre del vendedor con ese número. */
+export function useVendedorPorNumeroQuery(numero: number | undefined) {
+  return useQuery({
+    queryKey: vendedoresKeys.numero(numero as number),
+    queryFn: ({ signal }) => vendedoresApi.porNumero(numero as number, signal),
+    enabled: numero !== undefined,
   })
 }
 

@@ -9,6 +9,7 @@ import { EncabezadoPagina } from "@/shared/ui/encabezado-pagina"
 import { Skeleton } from "@/shared/ui/skeleton"
 
 import { TarjetaStock } from "../components/TarjetaStock"
+import { TarjetaVentas } from "../components/TarjetaVentas"
 import { useRefrescarResumen, useResumen } from "../queries"
 
 export function ResumenPage() {
@@ -65,6 +66,7 @@ export function ResumenPage() {
           {!resumen.data.avisos.some((a) => a.tipo === "tc_sin_cargar") && (
             <TarjetaTipoCambio onCargado={refrescar} />
           )}
+          <TarjetaVentas ventas={resumen.data.ventas} />
           <TarjetaStock stock={resumen.data.stock} />
         </div>
       )}

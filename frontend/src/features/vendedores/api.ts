@@ -9,6 +9,9 @@ export type DatosVendedor = { numero?: string | null; nombre: string }
 export const vendedoresApi = {
   listar: (signal?: AbortSignal) =>
     pedir<Vendedor[]>("/vendedores", { signal }),
+  /** 404 con "Vendedor no registrado." si no está. */
+  porNumero: (numero: number, signal?: AbortSignal) =>
+    pedir<Vendedor>(`/vendedores/numero/${numero}`, { signal }),
   crear: (datos: DatosVendedor) =>
     pedir<Vendedor>("/vendedores", { method: "POST", body: datos }),
   actualizar: (id: number, datos: DatosVendedor) =>

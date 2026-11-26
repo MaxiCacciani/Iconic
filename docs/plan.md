@@ -13,16 +13,16 @@ Al cerrar una fase, marcala acá.
 - [x] Fase 4 — Productos y stock
 - [x] Fase 5 — Clientes
 - [x] Fase 6 — Vendedores y packs
-- [ ] Fase 7 — Ventas al contado y canje ← **siguiente**
-- [ ] Fase 8 — Cuotas, cobros y agenda
+- [x] Fase 7 — Ventas al contado y canje
+- [ ] Fase 8 — Cuotas, cobros y agenda ← **siguiente**
 - [ ] Fase 9 — Reservas
 - [ ] Fase 10 — Garantías
 - [ ] Fase 11 — Reclamos
 - [ ] Fase 12 — Cierre
 
-## Estado actual (26/11/2026)
+## Estado actual (26/11/2026, Fase 7)
 
-**Verificado:** `uv run pytest` pasa 244 tests, `ruff` está limpio, y `npm run build`, `typecheck` y `oxlint` pasan sin errores ni avisos. `docker compose up` levanta todo y la app responde en `localhost:8080`.
+**Verificado:** `uv run pytest` pasa 273 tests, `ruff` está limpio, y `npm run build`, `typecheck` y `oxlint` pasan sin errores ni avisos. `docker compose up` levanta todo y la app responde en `localhost:8080`.
 
 **Fase 0:** completa. Además, `schema.sql` ya tiene las tablas del DER (26 al cerrar la fase; 28 desde que se sumaron `modelo_colores` y `modelo_capacidades`) (los catálogos iniciales pasaron a la semilla de la Fase 3). Las clases SQLModel solo existen para `usuarios`: las demás se escriben en su fase.
 
@@ -98,6 +98,20 @@ Al cerrar una fase, marcala acá.
 - En el front: features `vendedores` (tabla, alta y edición en un `Sheet`, borrado con confirmación) y `packs` (tarjetas con cada ítem, regalo y aviso si hoy no alcanza el stock; alta y edición con un editor de ítems). `BuscadorProducto` (exportado en `features/productos`) busca disponibles por modelo o IMEI, para los packs y el carrito de la Fase 7. `useAplicarPack` queda exportado para el wizard.
 - `datos_prueba` suma 4 vendedores y 3 packs.
 - Tests: 9 del reparto (dominio), 26 de API de packs y 9 de vendedores.
+
+**Fase 7:** completa y probada en el navegador con los dos roles (SQLite), y la API contra PostgreSQL (`schema.sql`).
+- `ventas` y `venta_items` con SQLModel. Faltan `reserva_id` (Fase 9), `cantidad_cuotas` y `anticipo_usd` (Fase 8): en `schema.sql` ya están y toman su valor por defecto.
+- `dominio.py`: `total` (sin regalos), `costo` (con regalos; `null` si algún ítem no tiene costo) y `bajo_costo`. Strategy `ModalidadPago` en `modalidades.py` con `Contado` (el canje no puede cubrir el total); `cuotas` responde 422 hasta la Fase 8.
+- `POST /ventas/cotizar` (los dos roles, no graba nada) recibe el mismo cuerpo que la venta: total, canje y saldo con los pesos del TC de hoy; el admin suma costo, ganancia, margen y `bajo_costo` (posiciones de los ítems).
+- `POST /ventas` dentro de la UoW: TC congelado (sin TC del día, 422), un regalo se guarda con precio 0, cada ítem guarda el costo del momento, stock con `Producto.vender(cantidad)` y canje con `ProductoFactory.desde_canje` (precio = costo = valor, proveedor «Plan canje», IMEI opcional). Sin `metodo_pago_id`, el predeterminado del catálogo. El vendedor se manda por número (`vendedor_numero`); si no está, 422 «Vendedor no registrado.». Los errores del canje van en `canje.<campo>`.
+- Stock de accesorios: se descuentan las unidades y la fila pasa a `vendido` recién cuando se vende todo. Al devolver, una fila vendida vuelve con las unidades de esa venta y a una que sigue en el stock se le suman (da bien en cualquier orden).
+- **Decisión:** solo se vende lo disponible; un producto reservado se vende convirtiendo su reserva (Fase 9).
+- `GET /ventas`: las últimas primero, DTOs por rol. El Vendedor ve solo las que registró él; el admin recibe además `ganancia_total_usd` (solo las ventas con costo).
+- `DELETE /ventas/{id}` (solo admin, permiso nuevo `ventas:borrar`) devuelve el stock. **Decisión:** el equipo que entró por el canje de esa venta sale del stock con ella. No se borra (409) si ese equipo ya se vendió o se reservó, o si un equipo vendido volvió a entrar con el mismo IMEI.
+- **Decisión:** un producto que es parte del historial de una venta (un accesorio vendido en parte, o un equipo de canje) no se borra (409, leído de las claves foráneas).
+- Resumen suma `ventas`: hoy y últimos 7 días (hoy incluido), con cantidad, USD y pesos al TC congelado de cada venta (`reloj.inicio_del_dia`).
+- En el front: wizard en `/ventas/nueva` (`Seccion.nueva` en `navegacion.ts`) con `useReducer` + Context (`components/borrador.ts`), cotización con cada cambio (300 ms), el panel de resumen siempre a la vista y, al confirmar con errores, lleva al paso del primer campo marcado. Packs con `useAplicarPack`, cliente con `BuscadorCliente`, canje con `CamposEquipo` (salió de `ProductoSheet`, que ahora también lo usa) y aviso de TC sin cargar. Historial en `/ventas` con una fila por venta y el detalle en un `Sheet` (productos, canje, totales y, para el admin, costos y el botón de borrar). Tarjeta de ventas en Resumen. `InputUSD` en `shared/ui`.
+- Tests: 8 de dominio (montos, Strategy y stock al vender y devolver) y 20 de API (con casos parametrizados) (cotizar por rol, stock del carrito, sin TC, stock y TC congelado, canje, atomicidad, historial por rol, borrado con sus dos rechazos, producto con ventas y Resumen).
 
 **Decisiones confirmadas (21/11/2026):**
 - Los usuarios se **desactivan, no se borran**, porque ventas y reservas guardan `usuario_id`.
@@ -263,4 +277,4 @@ Al cerrar una fase, marcala acá.
 1. **Migraciones:** el README ya usa `schema.sql` y `docker compose down -v` cuando cambia el esquema, así que todo indica que se descartó Alembic. Falta confirmarlo.
 2. ~~TC sin cargar en una venta~~: decidido (ver Fase 7).
 3. ~~IMEI repetido con un equipo vendido~~: decidido (ver Fase 4).
-4. **Borrar una venta cuyo equipo volvió al stock por canje:** ver Fase 7.
+4. ~~Borrar una venta cuyo equipo volvió al stock por canje~~: decidido (ver Fase 7: se rechaza con 409).

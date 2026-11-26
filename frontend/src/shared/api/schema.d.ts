@@ -560,6 +560,67 @@ export interface paths {
     patch: operations["actualizar_clientes__cliente_id__patch"]
     trace?: never
   }
+  "/ventas/cotizar": {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /**
+     * Cotizar
+     * @description Total, canje y saldo del carrito, en cada cambio del wizard. No graba nada.
+     */
+    post: operations["cotizar_ventas_cotizar_post"]
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  "/ventas": {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /** Listar */
+    get: operations["listar_ventas_get"]
+    put?: never
+    /**
+     * Crear
+     * @description Sin TC del día, 422. Con un dato inválido, 422 en ese campo y no se graba nada.
+     */
+    post: operations["crear_ventas_post"]
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  "/ventas/{venta_id}": {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    post?: never
+    /**
+     * Eliminar
+     * @description Borra la venta y devuelve el stock. No se puede deshacer.
+     */
+    delete: operations["eliminar_ventas__venta_id__delete"]
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
   "/packs": {
     parameters: {
       query?: never
@@ -756,6 +817,34 @@ export interface components {
       /** Avisos */
       avisos: string[]
     }
+    /**
+     * CanjeCreate
+     * @description El equipo que entrega el cliente (reglas 4.5). Los datos que lleva dependen del tipo
+     *     de la categoría, como al cargar un producto, pero el IMEI es opcional.
+     */
+    CanjeCreate: {
+      /** Modelo Id */
+      modelo_id: number
+      /** Capacidad Id */
+      capacidad_id?: number | null
+      /** Color Id */
+      color_id?: number | null
+      condicion: components["schemas"]["Condicion"]
+      /** Imei */
+      imei?: string | null
+      /** Bateria */
+      bateria?: number | null
+      /** Controles */
+      controles?: number | null
+      /** Extras */
+      extras?: string | null
+    }
+    /** CanjeRead */
+    CanjeRead: {
+      /** Valor Usd */
+      valor_usd: string
+      producto: components["schemas"]["ProductoVendido"] | null
+    }
     /** CategoriaCreate */
     CategoriaCreate: {
       /** Nombre */
@@ -831,6 +920,65 @@ export interface components {
      * @enum {string}
      */
     Condicion: "nuevo" | "usado"
+    /** CotizacionAdmin */
+    CotizacionAdmin: {
+      /** Total Usd */
+      total_usd: string
+      /** Total Ars */
+      total_ars: string | null
+      /** Canje Usd */
+      canje_usd: string
+      /**
+       * Saldo Usd
+       * @description Lo que queda por pagar: total − canje.
+       */
+      saldo_usd: string
+      /** Saldo Ars */
+      saldo_ars: string | null
+      /** Costo Usd */
+      costo_usd: string | null
+      /** Ganancia Usd */
+      ganancia_usd: string | null
+      /** Margen Pct */
+      margen_pct: string | null
+      /**
+       * Bajo Costo
+       * @description Posiciones (desde 0) de los ítems con precio por debajo del costo.
+       */
+      bajo_costo: number[]
+    }
+    /**
+     * CotizacionCreate
+     * @description Lo que hace falta para cotizar. El wizard puede mandar la venta entera: lo demás se
+     *     ignora.
+     */
+    CotizacionCreate: {
+      /** Items */
+      items: components["schemas"]["ItemVentaCreate"][]
+      /** @default contado */
+      modalidad: components["schemas"]["Modalidad"]
+      /** Canje Valor Usd */
+      canje_valor_usd?: (number | string) | null
+    }
+    /**
+     * CotizacionVendedor
+     * @description Los montos en pesos son con el TC de hoy: `null` si no se cargó.
+     */
+    CotizacionVendedor: {
+      /** Total Usd */
+      total_usd: string
+      /** Total Ars */
+      total_ars: string | null
+      /** Canje Usd */
+      canje_usd: string
+      /**
+       * Saldo Usd
+       * @description Lo que queda por pagar: total − canje.
+       */
+      saldo_usd: string
+      /** Saldo Ars */
+      saldo_ars: string | null
+    }
     /** DefectoCreate */
     DefectoCreate: {
       /** Descripcion */
@@ -951,6 +1099,51 @@ export interface components {
       /** Nombre */
       nombre?: string | null
     }
+    /** ItemVentaAdmin */
+    ItemVentaAdmin: {
+      producto: components["schemas"]["ProductoVendido"]
+      /** Cantidad */
+      cantidad: number
+      /** Precio Usd */
+      precio_usd: string
+      /** Es Regalo */
+      es_regalo: boolean
+      /** Costo Usd */
+      costo_usd: string | null
+      /** Bajo Costo */
+      bajo_costo: boolean
+    }
+    /**
+     * ItemVentaCreate
+     * @description El precio es el del renglón y se puede editar. Un regalo cuenta US$ 0, mande el
+     *     precio que mande, y va en un renglón aparte de las unidades con precio.
+     */
+    ItemVentaCreate: {
+      /** Producto Id */
+      producto_id: number
+      /**
+       * Cantidad
+       * @default 1
+       */
+      cantidad: number
+      /** Precio Usd */
+      precio_usd: number | string
+      /**
+       * Es Regalo
+       * @default false
+       */
+      es_regalo: boolean
+    }
+    /** ItemVentaVendedor */
+    ItemVentaVendedor: {
+      producto: components["schemas"]["ProductoVendido"]
+      /** Cantidad */
+      cantidad: number
+      /** Precio Usd */
+      precio_usd: string
+      /** Es Regalo */
+      es_regalo: boolean
+    }
     /** LineaPackAdmin */
     LineaPackAdmin: {
       /** Pack Item Id */
@@ -1004,6 +1197,11 @@ export interface components {
       /** Predeterminado */
       predeterminado?: boolean | null
     }
+    /**
+     * Modalidad
+     * @enum {string}
+     */
+    Modalidad: "contado" | "cuotas"
     /**
      * ModeloRead
      * @description `color_ids` y `capacidad_ids` vacíos: el modelo ofrece todos los de su categoría.
@@ -1123,6 +1321,22 @@ export interface components {
       /** Items */
       items?: components["schemas"]["PackItemCreate"][] | null
     }
+    /** PaginaVentasAdmin */
+    PaginaVentasAdmin: {
+      /** Items */
+      items: components["schemas"]["VentaReadAdmin"][]
+      /** Total */
+      total: number
+      /** Pagina */
+      pagina: number
+      /** Tamanio */
+      tamanio: number
+      /**
+       * Ganancia Total Usd
+       * @description Ganancia registrada de todas las ventas, sumando solo las que tienen costo.
+       */
+      ganancia_total_usd: string
+    }
     /** Pagina[ClienteRead] */
     Pagina_ClienteRead_: {
       /** Items */
@@ -1149,6 +1363,17 @@ export interface components {
     Pagina_ProductoReadVendedor_: {
       /** Items */
       items: components["schemas"]["ProductoReadVendedor"][]
+      /** Total */
+      total: number
+      /** Pagina */
+      pagina: number
+      /** Tamanio */
+      tamanio: number
+    }
+    /** Pagina[VentaReadVendedor] */
+    Pagina_VentaReadVendedor_: {
+      /** Items */
+      items: components["schemas"]["VentaReadVendedor"][]
       /** Total */
       total: number
       /** Pagina */
@@ -1350,6 +1575,17 @@ export interface components {
       /** Defectos Nuevos */
       defectos_nuevos?: string[] | null
     }
+    /** ProductoVendido */
+    ProductoVendido: {
+      /** Id */
+      id: number
+      categoria: components["schemas"]["Referencia"]
+      modelo: components["schemas"]["Referencia"]
+      capacidad: components["schemas"]["Referencia"] | null
+      color: components["schemas"]["Referencia"] | null
+      /** Imei */
+      imei: string | null
+    }
     /** Referencia */
     Referencia: {
       /** Id */
@@ -1367,6 +1603,7 @@ export interface components {
       /** Avisos */
       avisos: components["schemas"]["AvisoRead"][]
       stock: components["schemas"]["StockRead"]
+      ventas: components["schemas"]["VentasRead"]
     }
     /**
      * Rol
@@ -1571,6 +1808,118 @@ export interface components {
       numero?: number | null
       /** Nombre */
       nombre?: string | null
+    }
+    /**
+     * VentaCreate
+     * @description Con canje van los dos: `canje_valor_usd` y `canje` (el equipo). Sin método de pago,
+     *     el predeterminado del catálogo (reglas 4.4: transferencia).
+     */
+    VentaCreate: {
+      /** Items */
+      items: components["schemas"]["ItemVentaCreate"][]
+      /** @default contado */
+      modalidad: components["schemas"]["Modalidad"]
+      /** Canje Valor Usd */
+      canje_valor_usd?: (number | string) | null
+      /** Cliente Id */
+      cliente_id: number
+      /** Metodo Pago Id */
+      metodo_pago_id?: number | null
+      canje?: components["schemas"]["CanjeCreate"] | null
+      /** Vendedor Numero */
+      vendedor_numero?: number | null
+      /**
+       * Garantia Meses
+       * @default 3
+       */
+      garantia_meses: number
+    }
+    /** VentaReadAdmin */
+    VentaReadAdmin: {
+      /** Id */
+      id: number
+      /**
+       * Fecha
+       * Format: date-time
+       */
+      fecha: string
+      cliente: components["schemas"]["Referencia"]
+      usuario: components["schemas"]["Referencia"]
+      vendedor: components["schemas"]["VendedorRead"] | null
+      metodo_pago: components["schemas"]["Referencia"]
+      modalidad: components["schemas"]["Modalidad"]
+      /** Tc Ars */
+      tc_ars: string
+      /** Garantia Meses */
+      garantia_meses: number
+      /** Items */
+      items: components["schemas"]["ItemVentaAdmin"][]
+      canje: components["schemas"]["CanjeRead"] | null
+      /** Total Usd */
+      total_usd: string
+      /** Total Ars */
+      total_ars: string
+      /** Saldo Usd */
+      saldo_usd: string
+      /** Saldo Ars */
+      saldo_ars: string
+      /** Costo Usd */
+      costo_usd: string | null
+      /** Ganancia Usd */
+      ganancia_usd: string | null
+      /** Margen Pct */
+      margen_pct: string | null
+    }
+    /**
+     * VentaReadVendedor
+     * @description Los montos en pesos son con el TC congelado de la venta (`tc_ars`).
+     */
+    VentaReadVendedor: {
+      /** Id */
+      id: number
+      /**
+       * Fecha
+       * Format: date-time
+       */
+      fecha: string
+      cliente: components["schemas"]["Referencia"]
+      usuario: components["schemas"]["Referencia"]
+      vendedor: components["schemas"]["VendedorRead"] | null
+      metodo_pago: components["schemas"]["Referencia"]
+      modalidad: components["schemas"]["Modalidad"]
+      /** Tc Ars */
+      tc_ars: string
+      /** Garantia Meses */
+      garantia_meses: number
+      /** Items */
+      items: components["schemas"]["ItemVentaVendedor"][]
+      canje: components["schemas"]["CanjeRead"] | null
+      /** Total Usd */
+      total_usd: string
+      /** Total Ars */
+      total_ars: string
+      /** Saldo Usd */
+      saldo_usd: string
+      /** Saldo Ars */
+      saldo_ars: string
+    }
+    /**
+     * VentasDelPeriodo
+     * @description En pesos, cada venta con su TC congelado: lo que realmente se cobró.
+     */
+    VentasDelPeriodo: {
+      /** Cantidad */
+      cantidad: number
+      /** Total Usd */
+      total_usd: string
+      /** Total Ars */
+      total_ars: string
+    }
+    /** VentasRead */
+    VentasRead: {
+      hoy: components["schemas"]["VentasDelPeriodo"]
+      /** @description Hoy incluido. */
+      ultimos_7_dias: components["schemas"]["VentasDelPeriodo"]
     }
   }
   responses: never
@@ -3498,6 +3847,146 @@ export interface operations {
         content: {
           "application/json": components["schemas"]["ClienteRead"]
         }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"]
+        }
+      }
+    }
+  }
+  cotizar_ventas_cotizar_post: {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["CotizacionCreate"]
+      }
+    }
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          "application/json":
+            | components["schemas"]["CotizacionAdmin"]
+            | components["schemas"]["CotizacionVendedor"]
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"]
+        }
+      }
+    }
+  }
+  listar_ventas_get: {
+    parameters: {
+      query?: {
+        pagina?: number
+        tamanio?: number
+      }
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          "application/json":
+            | components["schemas"]["PaginaVentasAdmin"]
+            | components["schemas"]["Pagina_VentaReadVendedor_"]
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"]
+        }
+      }
+    }
+  }
+  crear_ventas_post: {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["VentaCreate"]
+      }
+    }
+    responses: {
+      /** @description Successful Response */
+      201: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          "application/json":
+            | components["schemas"]["VentaReadAdmin"]
+            | components["schemas"]["VentaReadVendedor"]
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"]
+        }
+      }
+    }
+  }
+  eliminar_ventas__venta_id__delete: {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        venta_id: number
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      204: {
+        headers: {
+          [name: string]: unknown
+        }
+        content?: never
+      }
+      /** @description Devolver el stock lo dejaría inconsistente. */
+      409: {
+        headers: {
+          [name: string]: unknown
+        }
+        content?: never
       }
       /** @description Validation Error */
       422: {

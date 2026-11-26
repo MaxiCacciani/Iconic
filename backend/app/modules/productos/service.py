@@ -9,7 +9,7 @@ from typing import Any
 
 from app.common.base import Pagina, ParamsPagina
 from app.common.enums import Condicion, EstadoProductoEnum
-from app.core.excepciones import NoEncontrado
+from app.core.excepciones import Conflicto, NoEncontrado
 from app.core.uow import UnidadDeTrabajo
 from app.modules.packs.repository import PackRepository
 from app.modules.productos import dominio
@@ -73,10 +73,15 @@ class ProductoService:
         return self.obtener(id, con_costos=True)  # type: ignore[return-value]
 
     def eliminar(self, id: int) -> None:
-        """Lo borra de verdad (reglas 2.2). Solo mientras está disponible."""
+        """Lo borra de verdad (reglas 2.2). Solo mientras está disponible y si no es parte
+        del historial de una venta (un accesorio vendido en parte, o un equipo de canje)."""
         with self.uow:
             producto = self.productos.obtener_o_falla(id)
             producto.verificar_borrable()
+            usos = self.productos.usos(producto, ignorar=("producto_defectos", "pack_items"))
+            if usos:
+                partes = ", ".join(f"{tabla} ({cantidad})" for tabla, cantidad in usos)
+                raise Conflicto(f"No se puede borrar: está en {partes}. Queda como historial.")
             # Si era el producto fijo de un pack, el ítem se va con él (ON DELETE CASCADE).
             PackRepository(self.uow.session).borrar_items_de_producto(id)
             self.productos.eliminar(producto)
