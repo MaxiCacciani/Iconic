@@ -11,8 +11,8 @@ Al cerrar una fase, marcala acá.
 - [x] Fase 2 — TC del día y esqueleto de Resumen
 - [x] Fase 3 — Catálogos
 - [x] Fase 4 — Productos y stock
-- [ ] Fase 5 — Clientes ← **siguiente**
-- [ ] Fase 6 — Vendedores y packs
+- [x] Fase 5 — Clientes
+- [ ] Fase 6 — Vendedores y packs ← **siguiente**
 - [ ] Fase 7 — Ventas al contado y canje
 - [ ] Fase 8 — Cuotas, cobros y agenda
 - [ ] Fase 9 — Reservas
@@ -20,9 +20,9 @@ Al cerrar una fase, marcala acá.
 - [ ] Fase 11 — Reclamos
 - [ ] Fase 12 — Cierre
 
-## Estado actual (21/11/2026)
+## Estado actual (25/11/2026)
 
-**Verificado:** `uv run pytest` pasa 157 tests, `ruff` está limpio, y `npm run build`, `typecheck` y `oxlint` pasan sin errores ni avisos. `docker compose up` levanta todo y la app responde en `localhost:8080`.
+**Verificado:** `uv run pytest` pasa 200 tests, `ruff` está limpio, y `npm run build`, `typecheck` y `oxlint` pasan sin errores ni avisos. `docker compose up` levanta todo y la app responde en `localhost:8080`.
 
 **Fase 0:** completa. Además, `schema.sql` ya tiene las tablas del DER (26 al cerrar la fase; 28 desde que se sumaron `modelo_colores` y `modelo_capacidades`) (los catálogos iniciales pasaron a la semilla de la Fase 3). Las clases SQLModel solo existen para `usuarios`: las demás se escriben en su fase.
 
@@ -74,6 +74,18 @@ Al cerrar una fase, marcala acá.
 - Tests: 25 de dominio y State, y 26 de API (tipos de categoría, IMEI, opciones del modelo, precio y costo, defectos, edición, borrado, estados, filtros, DTOs por rol, Resumen y el bloqueo en catálogos).
 - **IMEI único solo en el stock (decidido el 25/11/2026):** no se repite entre lo no vendido (disponible o reservado). Un equipo vendido puede volver a entrar con el mismo IMEI, porque las ventas apuntan al `producto_id`. Índice parcial `uq_productos_imei ... WHERE imei IS NOT NULL AND estado <> 'vendido'` en `schema.sql` y en el modelo, y `ProductoRepository.en_stock_por_imei` en la factory. En una base ya creada: `DROP INDEX uq_productos_imei;` y el `CREATE UNIQUE INDEX` de `schema.sql`.
 - "Otro" (reglas 2.1): un modelo, capacidad o color que no está se agrega desde Catálogos; el alta avisa y enlaza ahí si la categoría no tiene modelos.
+
+**Fase 5:** completa y probada en el navegador con los dos roles (SQLite), y la API contra PostgreSQL (`schema.sql`).
+- `clientes` con SQLModel. `GET /clientes` (`buscar` por nombre o DNI, paginado y ordenado por nombre) y `GET /clientes/{id}` (la ficha), `POST` y `PATCH` para los dos roles; `DELETE` solo para el admin (permiso nuevo `clientes:borrar`).
+- Búsqueda: cada palabra del nombre en cualquier orden, sin distinguir mayúsculas ni tildes ("perez juan" encuentra a "Juan Pérez"), con `replace()` anidados que andan igual en PostgreSQL y en SQLite. El DNI se busca por una parte, con o sin puntos.
+- Los Value Objects `DNI` y `Telefono` aceptan separadores (`30.123.456`, `+54 9 (341) 555-1234`) y guardan solo los dígitos. Un opcional en blanco es `null`. Con letras, el error dice que solo van números; la longitud se valida aparte y dice cuántos dígitos tiene (lo mismo en el IMEI).
+- El nombre tiene hasta 100 caracteres y se guarda con la inicial de cada palabra en mayúscula ("maría de los ángeles" → "María de los Ángeles"; las partículas van en minúscula salvo al principio).
+- DNI único con un 422 en el campo que nombra al otro cliente ("Ya hay un cliente con ese DNI: Juan Pérez (#1)."), para que el Vendedor lo encuentre en vez de duplicarlo. La localidad tiene que existir.
+- **Decisión:** un cliente con ventas, reservas o reclamos no se borra (409); de todos modos la base no lo dejaría. `usos()` pasó de `CatalogoRepository` a `RepositorioBase` y lee las claves foráneas, así que las Fases 7, 9 y 11 quedan cubiertas solas. Una localidad usada por un cliente tampoco se borra.
+- En el front: feature `clientes` con el listado (búsqueda en la URL, paginación), alta y edición en un `Sheet`, y la ficha en `/clientes/:id` (`Seccion.detalle` en `navegacion.ts` agrega rutas de detalle con el permiso de la sección). Alta desde el listado lleva a la ficha.
+- `BuscadorCliente` (exportado en `features/clientes`) para la venta y la reserva: combobox (`popover` + `command` de shadcn) que busca en la API mientras se escribe y, si no está, da de alta ahí mismo con lo escrito como nombre o, si es un número, como DNI. Enter elige el primer resultado. Se probó montándolo a mano; todavía no lo usa ninguna pantalla.
+- Formatters `formatearDNI` y `formatearDiaDe` (un instante, en el día de Argentina).
+- Tests: 28 de API (alta, DNI y teléfono, DNI único, edición, búsqueda, paginación, ficha, borrado con historial, roles y la localidad en uso) y uno de Value Objects.
 
 **Decisiones confirmadas (21/11/2026):**
 - Los usuarios se **desactivan, no se borran**, porque ventas y reservas guardan `usuario_id`.

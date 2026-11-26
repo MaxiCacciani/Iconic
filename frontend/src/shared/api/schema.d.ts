@@ -523,6 +523,43 @@ export interface paths {
     patch: operations["actualizar_productos__producto_id__patch"]
     trace?: never
   }
+  "/clientes": {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /** Listar */
+    get: operations["listar_clientes_get"]
+    put?: never
+    /** Crear */
+    post: operations["crear_clientes_post"]
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  "/clientes/{cliente_id}": {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /** Obtener */
+    get: operations["obtener_clientes__cliente_id__get"]
+    put?: never
+    post?: never
+    /** Eliminar */
+    delete: operations["eliminar_clientes__cliente_id__delete"]
+    options?: never
+    head?: never
+    /** Actualizar */
+    patch: operations["actualizar_clientes__cliente_id__patch"]
+    trace?: never
+  }
   "/tipo-cambio/hoy": {
     parameters: {
       query?: never
@@ -627,6 +664,53 @@ export interface components {
       nombre?: string | null
       /** Tipo Categoria Id */
       tipo_categoria_id?: number | null
+    }
+    /**
+     * ClienteCreate
+     * @description El DNI y el teléfono aceptan puntos, espacios o guiones (`30.123.456`,
+     *     `+54 9 11 5555-1234`): se guardan solo los dígitos.
+     */
+    ClienteCreate: {
+      /** Nombre */
+      nombre: string
+      /** Dni */
+      dni?: string | null
+      /** Telefono */
+      telefono?: string | null
+      /** Localidad Id */
+      localidad_id?: number | null
+    }
+    /** ClienteRead */
+    ClienteRead: {
+      /** Id */
+      id: number
+      /** Nombre */
+      nombre: string
+      /** Dni */
+      dni: string | null
+      /** Telefono */
+      telefono: string | null
+      localidad: components["schemas"]["Referencia"] | null
+      /**
+       * Creado En
+       * Format: date-time
+       */
+      creado_en: string
+    }
+    /**
+     * ClienteUpdate
+     * @description Lo que no se manda queda como estaba. `null` borra el DNI, el teléfono o la
+     *     localidad; el nombre es obligatorio y no se puede borrar.
+     */
+    ClienteUpdate: {
+      /** Nombre */
+      nombre?: string | null
+      /** Dni */
+      dni?: string | null
+      /** Telefono */
+      telefono?: string | null
+      /** Localidad Id */
+      localidad_id?: number | null
     }
     /**
      * Condicion
@@ -798,6 +882,17 @@ export interface components {
      * @enum {string}
      */
     NivelBateria: "alta" | "media" | "baja"
+    /** Pagina[ClienteRead] */
+    Pagina_ClienteRead_: {
+      /** Items */
+      items: components["schemas"]["ClienteRead"][]
+      /** Total */
+      total: number
+      /** Pagina */
+      pagina: number
+      /** Tamanio */
+      tamanio: number
+    }
     /** Pagina[ProductoReadAdmin] */
     Pagina_ProductoReadAdmin_: {
       /** Items */
@@ -2952,6 +3047,168 @@ export interface operations {
         }
         content: {
           "application/json": components["schemas"]["ProductoReadAdmin"]
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"]
+        }
+      }
+    }
+  }
+  listar_clientes_get: {
+    parameters: {
+      query?: {
+        pagina?: number
+        tamanio?: number
+        /** @description Parte del nombre o del DNI */
+        buscar?: string | null
+      }
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          "application/json": components["schemas"]["Pagina_ClienteRead_"]
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"]
+        }
+      }
+    }
+  }
+  crear_clientes_post: {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["ClienteCreate"]
+      }
+    }
+    responses: {
+      /** @description Successful Response */
+      201: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          "application/json": components["schemas"]["ClienteRead"]
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"]
+        }
+      }
+    }
+  }
+  obtener_clientes__cliente_id__get: {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        cliente_id: number
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          "application/json": components["schemas"]["ClienteRead"]
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"]
+        }
+      }
+    }
+  }
+  eliminar_clientes__cliente_id__delete: {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        cliente_id: number
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      204: {
+        headers: {
+          [name: string]: unknown
+        }
+        content?: never
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"]
+        }
+      }
+    }
+  }
+  actualizar_clientes__cliente_id__patch: {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        cliente_id: number
+      }
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["ClienteUpdate"]
+      }
+    }
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          "application/json": components["schemas"]["ClienteRead"]
         }
       }
       /** @description Validation Error */

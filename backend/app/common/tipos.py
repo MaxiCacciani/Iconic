@@ -20,25 +20,55 @@ def luhn_valido(numero: str) -> bool:
 
 
 def _validar_imei(valor: str) -> str:
-    if not (valor.isdigit() and len(valor) == 15):
-        raise ValueError("El IMEI debe tener exactamente 15 dígitos")
+    if not valor.isdigit():
+        raise ValueError("El IMEI solo puede tener números.")
+    if len(valor) != 15:
+        raise ValueError(f"El IMEI tiene que tener 15 dígitos y tiene {len(valor)}.")
     if not luhn_valido(valor):
         raise ValueError("El IMEI no tiene un dígito de control válido")
     return valor
 
 
-def _validar_digitos(minimo: int, maximo: int, nombre: str):
+def _validar_digitos(minimo: int, maximo: int, nombre: str, separadores: str):
+    """Primero los caracteres y después la longitud, cada uno con su mensaje: con letras,
+    decir "tiene que tener 8 dígitos" confunde. `separadores` es lo que se acepta además
+    de los números (ya se sacó antes de validar), para decirlo en el mensaje."""
+    largo = f"{minimo} u {maximo}" if maximo == minimo + 1 else f"entre {minimo} y {maximo}"
+
     def validar(valor: str) -> str:
-        if not (valor.isdigit() and minimo <= len(valor) <= maximo):
-            raise ValueError(f"El {nombre} debe tener entre {minimo} y {maximo} dígitos")
+        if valor and not valor.isdigit():
+            raise ValueError(
+                f"El {nombre} solo puede tener números (también se aceptan {separadores})."
+            )
+        if not minimo <= len(valor) <= maximo:
+            raise ValueError(f"El {nombre} tiene que tener {largo} dígitos y tiene {len(valor)}.")
         return valor
 
     return validar
 
 
+def _sin_separadores(caracteres: str):
+    """Saca los separadores con los que se suele escribir el número: `30.123.456`,
+    `+54 9 11 5555-1234`. Lo que queda tiene que ser solo dígitos."""
+    patron = re.compile(f"[{re.escape(caracteres)}\\s]")
+
+    def limpiar(valor: object) -> object:
+        return patron.sub("", valor) if isinstance(valor, str) else valor
+
+    return limpiar
+
+
 IMEI = Annotated[str, AfterValidator(_validar_imei)]
-DNI = Annotated[str, AfterValidator(_validar_digitos(7, 8, "DNI"))]
-Telefono = Annotated[str, AfterValidator(_validar_digitos(8, 15, "teléfono"))]
+DNI = Annotated[
+    str,
+    BeforeValidator(_sin_separadores(".-")),
+    AfterValidator(_validar_digitos(7, 8, "DNI", "puntos, espacios y guiones")),
+]
+Telefono = Annotated[
+    str,
+    BeforeValidator(_sin_separadores(".-()+")),
+    AfterValidator(_validar_digitos(8, 15, "teléfono", "espacios, guiones, paréntesis y el +")),
+]
 
 
 _MILES = re.compile(r"^\d{1,3}(\.\d{3})+$")

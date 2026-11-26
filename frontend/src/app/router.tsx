@@ -1,3 +1,4 @@
+import type { ComponentType } from "react"
 import { createBrowserRouter } from "react-router"
 
 import { LoginPage } from "@/features/auth"
@@ -25,19 +26,28 @@ export const router = createBrowserRouter([
         ErrorBoundary: ErrorPage,
         children: [
           // Cada sección se carga recién cuando se abre (un chunk por feature).
-          ...SECCIONES.map(({ ruta, permiso, cargar }) => ({
-            ...(ruta === "/" ? { index: true } : { path: ruta.slice(1) }),
-            lazy: async () => {
-              const Pagina = await cargar()
-              return {
-                Component: () => (
-                  <RequierePermiso permiso={permiso}>
-                    <Pagina />
-                  </RequierePermiso>
-                ),
+          ...SECCIONES.flatMap(({ ruta, permiso, cargar, detalle }) => {
+            const conPermiso =
+              (cargarPagina: () => Promise<ComponentType>) => async () => {
+                const Pagina = await cargarPagina()
+                return {
+                  Component: () => (
+                    <RequierePermiso permiso={permiso}>
+                      <Pagina />
+                    </RequierePermiso>
+                  ),
+                }
               }
-            },
-          })),
+            return [
+              {
+                ...(ruta === "/" ? { index: true } : { path: ruta.slice(1) }),
+                lazy: conPermiso(cargar),
+              },
+              ...(detalle
+                ? [{ path: `${ruta.slice(1)}/:id`, lazy: conPermiso(detalle) }]
+                : []),
+            ]
+          }),
           { path: "*", Component: NoEncontradoPage },
         ],
       },

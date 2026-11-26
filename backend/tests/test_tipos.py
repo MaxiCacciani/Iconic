@@ -26,3 +26,18 @@ def test_dni(valor, ok):
 def test_telefono_largo_invalido():
     with pytest.raises(ValidationError):
         TypeAdapter(Telefono).validate_python("1" * 16)
+
+
+def test_dni_y_telefono_aceptan_separadores():
+    assert TypeAdapter(DNI).validate_python("30.123.456") == "30123456"
+    assert TypeAdapter(DNI).validate_python("7 123 456") == "7123456"
+    assert TypeAdapter(Telefono).validate_python("+54 9 (341) 555-1234") == "5493415551234"
+    with pytest.raises(ValidationError):
+        TypeAdapter(DNI).validate_python("30/123/456")
+
+
+def test_imei_con_letras_avisa_que_son_solo_numeros():
+    with pytest.raises(ValidationError, match="solo puede tener números"):
+        TypeAdapter(IMEI).validate_python("49015420323751X")
+    with pytest.raises(ValidationError, match="tiene que tener 15 dígitos y tiene 14"):
+        TypeAdapter(IMEI).validate_python("49015420323751")
