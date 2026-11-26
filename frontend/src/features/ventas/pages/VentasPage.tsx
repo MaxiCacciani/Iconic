@@ -160,6 +160,7 @@ export function VentasPage() {
       <DetalleVentaSheet
         venta={abierta}
         onCerrar={() => setAbierta(null)}
+        onActualizada={setAbierta}
         onBorrar={puede("ventas:borrar") ? setABorrar : undefined}
       />
       <ConfirmarBorrarVenta

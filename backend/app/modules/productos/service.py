@@ -74,11 +74,17 @@ class ProductoService:
 
     def eliminar(self, id: int) -> None:
         """Lo borra de verdad (reglas 2.2). Solo mientras está disponible y si no es parte
-        del historial de una venta (un accesorio vendido en parte, o un equipo de canje)."""
+        del historial de una venta (un accesorio con ventas, o un equipo de canje). Un
+        accesorio con ventas se saca del stock poniendo la cantidad en 0."""
         with self.uow:
             producto = self.productos.obtener_o_falla(id)
             producto.verificar_borrable()
             usos = self.productos.usos(producto, ignorar=("producto_defectos", "pack_items"))
+            if usos and producto.modelo.categoria.tipo.por_cantidad:
+                raise Conflicto(
+                    "Tiene ventas: no se puede borrar. "
+                    "Para sacarlo del stock, poné la cantidad en 0."
+                )
             if usos:
                 partes = ", ".join(f"{tabla} ({cantidad})" for tabla, cantidad in usos)
                 raise Conflicto(f"No se puede borrar: está en {partes}. Queda como historial.")

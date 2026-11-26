@@ -1,8 +1,8 @@
 """Capa de presentación: endpoints HTTP de ventas.
 
 Los dos roles cotizan y registran ventas. El rol decide el DTO: el Vendedor no recibe
-costos, ganancia, margen ni "bajo costo", y en el historial ve solo sus ventas. Borrar
-una venta es solo del Administrador.
+costos, ganancia, margen, comisión ni "bajo costo", y en el historial ve solo sus ventas.
+Cambiar la comisión y borrar una venta es solo del Administrador.
 """
 
 from typing import Annotated
@@ -13,6 +13,7 @@ from app.common.base import ParamsPagina
 from app.common.enums import Rol
 from app.core.deps import Logueado, UowDep, solo_admin, usuario_actual
 from app.modules.ventas.schemas import (
+    ComisionUpdate,
     CotizacionAdmin,
     CotizacionCreate,
     CotizacionVendedor,
@@ -59,6 +60,13 @@ def listar(
 def crear(datos: VentaCreate, uow: UowDep, usuario: Logueado) -> VentaReadAdmin | VentaReadVendedor:
     """Sin TC del día, 422. Con un dato inválido, 422 en ese campo y no se graba nada."""
     return VentaService(uow).crear(datos, usuario, con_costos=usuario.rol == Rol.admin)
+
+
+@router.patch(
+    "/{venta_id}/comision", response_model=VentaReadAdmin, dependencies=[Depends(solo_admin)]
+)
+def cambiar_comision(venta_id: int, datos: ComisionUpdate, uow: UowDep) -> VentaReadAdmin:
+    return VentaService(uow).cambiar_comision(venta_id, datos.comision_usd)
 
 
 @router.delete(

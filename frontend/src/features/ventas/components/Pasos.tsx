@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react"
 
+import { useAuth } from "@/features/auth"
 import { useCatalogoQuery } from "@/features/catalogos"
 import { BuscadorCliente } from "@/features/clientes"
 import { CamposEquipo, type Equipo } from "@/features/productos"
@@ -183,6 +184,7 @@ const ESPERA = 300
 
 export function PasoVendedor() {
   const { b, despachar, campos } = useVenta()
+  const { puede } = useAuth()
   const escrito = b.vendedorNumero.trim()
   const [buscado, setBuscado] = useState(escrito)
   useEffect(() => {
@@ -263,6 +265,34 @@ export function PasoVendedor() {
           <FieldError>{campos.garantia_meses}</FieldError>
         )}
       </Field>
+
+      {puede("ver_costos") && (
+        <Field
+          data-invalid={campos.comision_usd ? true : undefined}
+          className="sm:w-1/2"
+        >
+          <FieldLabel htmlFor="venta-comision">Comisión (opcional)</FieldLabel>
+          <InputUSD
+            id="venta-comision"
+            placeholder="0"
+            value={b.comision}
+            onChange={(e) =>
+              despachar({
+                tipo: "cambiar",
+                cambios: { comision: e.target.value },
+              })
+            }
+            aria-invalid={campos.comision_usd ? true : undefined}
+          />
+          <FieldDescription>
+            Se descuenta de la ganancia. Se puede cargar después, desde el
+            historial.
+          </FieldDescription>
+          {campos.comision_usd && (
+            <FieldError>{campos.comision_usd}</FieldError>
+          )}
+        </Field>
+      )}
     </FieldGroup>
   )
 }

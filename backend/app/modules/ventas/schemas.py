@@ -1,7 +1,8 @@
 """DTOs de entrada y salida de ventas (Create / Read).
 
-Por rol: el Vendedor recibe la cotización y la venta sin costos, ganancia, margen ni la
-advertencia de "bajo costo". El Administrador recibe `…Admin`, que les suma esos datos.
+Por rol: el Vendedor recibe la cotización y la venta sin costos, ganancia, margen,
+comisión ni la advertencia de "bajo costo". El Administrador recibe `…Admin`, que les
+suma esos datos.
 """
 
 from datetime import datetime
@@ -41,6 +42,13 @@ class CotizacionCreate(BaseModel):
     items: Annotated[list[ItemVentaCreate], AfterValidator(_con_items)]
     modalidad: Modalidad = Modalidad.contado
     canje_valor_usd: PrecioUSD | None = None
+    comision_usd: USD = Field(
+        default=Decimal(0), description="Solo del Administrador: la de un Vendedor se ignora."
+    )
+
+
+class ComisionUpdate(BaseModel):
+    comision_usd: USD
 
 
 class CanjeCreate(BaseModel):
@@ -81,7 +89,7 @@ class CotizacionVendedor(BaseModel):
 
 class CotizacionAdmin(CotizacionVendedor):
     costo_usd: Decimal | None
-    ganancia_usd: Decimal | None
+    ganancia_usd: Decimal | None = Field(description="Total − costo − comisión.")
     margen_pct: Decimal | None
     bajo_costo: list[int] = Field(
         description="Posiciones (desde 0) de los ítems con precio por debajo del costo."
@@ -137,8 +145,9 @@ class VentaReadVendedor(BaseModel):
 
 class VentaReadAdmin(VentaReadVendedor):
     items: list[ItemVentaAdmin]  # type: ignore[assignment]
+    comision_usd: Decimal
     costo_usd: Decimal | None
-    ganancia_usd: Decimal | None
+    ganancia_usd: Decimal | None = Field(description="Total − costo − comisión.")
     margen_pct: Decimal | None
 
 
@@ -147,5 +156,6 @@ PaginaVentasVendedor = Pagina[VentaReadVendedor]
 
 class PaginaVentasAdmin(Pagina[VentaReadAdmin]):
     ganancia_total_usd: Decimal = Field(
-        description="Ganancia registrada de todas las ventas, sumando solo las que tienen costo."
+        description="Ganancia registrada de todas las ventas (descontada la comisión), sumando "
+        "solo las que tienen costo."
     )

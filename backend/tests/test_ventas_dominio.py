@@ -7,6 +7,7 @@ import pytest
 
 from app.common.enums import Condicion, EstadoProductoEnum, Modalidad
 from app.core.excepciones import ErrorDeCampo, TransicionInvalida
+from app.modules.catalogos.models import Categoria, Modelo, TipoCategoria
 from app.modules.productos.models import Producto
 from app.modules.ventas import dominio
 from app.modules.ventas.modalidades import Contado, modalidad_de
@@ -55,29 +56,29 @@ def test_cuotas_todavia_no():
         modalidad_de(Modalidad.cuotas)
 
 
-def _producto(cantidad=1, estado=EstadoProductoEnum.disponible) -> Producto:
+def _producto(cantidad=1, por_cantidad=False) -> Producto:
+    tipo = TipoCategoria(nombre="T", por_cantidad=por_cantidad)
     return Producto(
-        modelo_id=1,
+        modelo=Modelo(nombre="M", categoria=Categoria(nombre="C", tipo=tipo)),
         proveedor_id=1,
         condicion=Condicion.nuevo,
         cantidad=cantidad,
         precio_usd=D(10),
-        estado=estado,
     )
 
 
-def test_accesorio_se_descuenta_y_pasa_a_vendido_al_venderse_todo():
-    cable = _producto(cantidad=5)
+def test_accesorio_se_descuenta_y_sigue_disponible_en_0():
+    cable = _producto(cantidad=5, por_cantidad=True)
     cable.vender(2)
     assert (cable.estado, cable.cantidad) == (EstadoProductoEnum.disponible, 3)
     cable.vender(3)
-    assert (cable.estado, cable.cantidad) == (EstadoProductoEnum.vendido, 3)
+    assert (cable.estado, cable.cantidad) == (EstadoProductoEnum.disponible, 0)
 
 
 def test_devolver_en_cualquier_orden_deja_las_unidades_originales():
     # Dos ventas: A se lleva 2 y B las 3 que quedan. Se borran en los dos órdenes.
     for orden in ((2, 3), (3, 2)):
-        cable = _producto(cantidad=5)
+        cable = _producto(cantidad=5, por_cantidad=True)
         cable.vender(2)
         cable.vender(3)
         for cantidad in orden:
@@ -88,6 +89,8 @@ def test_devolver_en_cualquier_orden_deja_las_unidades_originales():
 def test_un_equipo_vendido_no_se_vuelve_a_vender():
     equipo = _producto()
     equipo.vender()
-    assert equipo.estado == EstadoProductoEnum.vendido
+    assert (equipo.estado, equipo.cantidad) == (EstadoProductoEnum.vendido, 1)
     with pytest.raises(TransicionInvalida):
         equipo.vender()
+    equipo.devolver()
+    assert (equipo.estado, equipo.cantidad) == (EstadoProductoEnum.disponible, 1)

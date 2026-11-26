@@ -27,6 +27,8 @@ export type Borrador = {
   canje: Equipo
   vendedorNumero: string
   garantiaMeses: string
+  /** Solo la carga el Administrador; vacía no se manda. */
+  comision: string
 }
 
 export const BORRADOR_VACIO: Borrador = {
@@ -39,6 +41,7 @@ export const BORRADOR_VACIO: Borrador = {
   canje: { ...EQUIPO_VACIO, condicion: "usado" },
   vendedorNumero: "",
   garantiaMeses: "3",
+  comision: "",
 }
 
 type NuevaLinea = Pick<Linea, "producto" | "cantidad" | "esRegalo">

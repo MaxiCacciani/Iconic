@@ -67,6 +67,10 @@ class Venta(SQLModel, table=True):
     # El TC congelado al vender: el historial refleja lo que realmente se cobró.
     tc_ars: Decimal = Field(sa_column=Column(Numeric(12, 2), nullable=False))
     garantia_meses: int = Field(default=3, sa_column=Column(SmallInteger, nullable=False))
+    # Solo la ve y la carga el Administrador; se resta de la ganancia.
+    comision_usd: Decimal = Field(
+        default=Decimal(0), sa_column=Column(Numeric(12, 2), nullable=False)
+    )
 
     items: list[VentaItem] = Relationship(
         cascade_delete=True, sa_relationship_kwargs={"order_by": "VentaItem.id"}

@@ -348,6 +348,9 @@ def test_borrar_devuelve_el_stock_y_saca_el_canje(client, admin, vendedor, datos
             canje=canje(datos),
         ),
     ).json()
+    # El cable se vendió entero: sigue disponible, sin stock.
+    cable = session.get(Producto, datos.cable_x5)
+    assert (cable.estado, cable.cantidad) == (EstadoProductoEnum.disponible, 0)
     url = f"/ventas/{v['id']}"
     assert client.delete(url, headers=auth_header(vendedor)).status_code == 403
 
@@ -402,7 +405,9 @@ def test_un_producto_con_ventas_no_se_borra(client, admin, datos, tc):
     vender(client, admin, venta(datos, [item(datos.cable_x5, "10", cantidad=2)]))
     r = client.delete(f"/productos/{datos.cable_x5}", headers=auth_header(admin))
     assert r.status_code == 409
-    assert r.json()["detail"] == "No se puede borrar: está en ventas (1). Queda como historial."
+    assert r.json()["detail"] == (
+        "Tiene ventas: no se puede borrar. Para sacarlo del stock, poné la cantidad en 0."
+    )
 
 
 # ─── Resumen ─────────────────────────────────────────────────────────────────

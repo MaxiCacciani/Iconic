@@ -54,6 +54,21 @@ export function useCrearVenta() {
   })
 }
 
+/** Solo del Administrador. Cambia la ganancia de la venta y la del historial. */
+export function useCambiarComision() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({ id, comision }: { id: number; comision: string }) =>
+      ventasApi.cambiarComision(id, comision),
+    onSuccess: () =>
+      Promise.all(
+        [ventasKeys.todo, ["resumen"]].map((queryKey) =>
+          queryClient.invalidateQueries({ queryKey })
+        )
+      ),
+  })
+}
+
 export function useEliminarVenta() {
   const alGuardar = useAlGuardar()
   return useMutation({

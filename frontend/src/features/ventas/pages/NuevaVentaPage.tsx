@@ -3,6 +3,7 @@ import { useEffect, useReducer, useState, type Dispatch } from "react"
 import { useNavigate } from "react-router"
 import { toast } from "sonner"
 
+import { useAuth } from "@/features/auth"
 import { datosDeEquipo, useTipoDeCategoria } from "@/features/productos"
 import { ApiError, mensajeDeError } from "@/shared/api"
 import { cn } from "@/shared/lib/utils"
@@ -55,6 +56,7 @@ const ESPERA_COTIZACION = 300
 
 export function NuevaVentaPage() {
   const navigate = useNavigate()
+  const { puede } = useAuth()
   const [b, despacharBorrador] = useReducer(reducir, BORRADOR_VACIO)
   const [paso, setPaso] = useState(0)
   const crear = useCrearVenta()
@@ -75,6 +77,9 @@ export function NuevaVentaPage() {
     })),
     modalidad: "contado",
     canje_valor_usd: b.conCanje ? limpio(b.canjeValor) : null,
+    // La comisión entra en la ganancia de la cotización; el Vendedor no la manda.
+    ...(puede("ver_costos") &&
+      limpio(b.comision) !== null && { comision_usd: limpio(b.comision) }),
   }
   const cotizacion = useCotizacionQuery(
     useDemorado(venta, ESPERA_COTIZACION),

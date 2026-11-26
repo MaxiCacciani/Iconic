@@ -8,6 +8,8 @@ Decisiones:
 - Sin TC del día no se registra la venta (se cotiza igual, sin pesos).
 - Solo se vende lo disponible: un producto reservado se vende convirtiendo su reserva.
 - El Vendedor ve solo las ventas que registró él; borrar es del Administrador.
+- La comisión es solo del Administrador y se resta de la ganancia. La que mande un
+  Vendedor se ignora (queda en 0), sin error: no tiene que enterarse de que existe.
 - Al borrar una venta, el equipo que entró por su canje sale del stock con ella. Si ya
   se vendió o se reservó, o si un equipo vendido volvió a entrar con el mismo IMEI, la
   venta no se borra (409): devolverlo dejaría el stock inconsistente.
@@ -91,11 +93,12 @@ class VentaService:
         if not con_costos:
             return CotizacionVendedor(**base)
         costo = dominio.costo(lineas)  # type: ignore[arg-type]
+        neto = total - datos.comision_usd
         return CotizacionAdmin(
             **base,
             costo_usd=costo,
-            ganancia_usd=ganancia(total, costo),
-            margen_pct=margen_pct(total, costo),
+            ganancia_usd=ganancia(neto, costo),
+            margen_pct=margen_pct(neto, costo),
             bajo_costo=[n for n, x in enumerate(lineas) if dominio.bajo_costo(x)],  # type: ignore[arg-type]
         )
 
@@ -135,6 +138,7 @@ class VentaService:
                     modalidad=datos.modalidad,
                     tc_ars=tc,
                     garantia_meses=datos.garantia_meses,
+                    comision_usd=datos.comision_usd if con_costos else Decimal(0),
                     items=lineas,
                 )
             )
@@ -243,6 +247,12 @@ class VentaService:
             sum((en_pesos(t, tc) for t, tc in totales), Decimal(0)),  # type: ignore[misc]
         )
 
+    def cambiar_comision(self, id: int, comision: Decimal) -> VentaReadAdmin:
+        with self.uow:
+            venta = self._detalle(id)
+            venta.comision_usd = comision
+        return self.obtener(id, con_costos=True)  # type: ignore[return-value]
+
     # ─── Borrar ──────────────────────────────────────────────────────────────
     def eliminar(self, id: int) -> None:
         """Reglas 4.9: borra la venta (y sus cuotas) y devuelve el stock."""
@@ -329,10 +339,12 @@ class VentaService:
         if not con_costos:
             return VentaReadVendedor(**base, items=items)
         costo = dominio.costo(v.items)  # type: ignore[arg-type]
+        neto = total - v.comision_usd
         return VentaReadAdmin(
             **base,
             items=items,
+            comision_usd=v.comision_usd,
             costo_usd=costo,
-            ganancia_usd=ganancia(total, costo),
-            margen_pct=margen_pct(total, costo),
+            ganancia_usd=ganancia(neto, costo),
+            margen_pct=margen_pct(neto, costo),
         )

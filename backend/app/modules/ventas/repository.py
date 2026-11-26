@@ -54,13 +54,18 @@ class VentaRepository(RepositorioBase[Venta]):
         ).all()
 
     def ganancia_total(self) -> Decimal:
-        """Total − costo de cada venta, sumando solo las que tienen el costo de todos sus
-        ítems. Los regalos se guardan con precio 0, así que el total es la suma simple."""
+        """Total − costo − comisión de cada venta, sumando solo las que tienen el costo de
+        todos sus ítems. Los regalos se guardan con precio 0, así que el total es la suma
+        simple."""
         importe = col(VentaItem.cantidad) * col(VentaItem.precio_usd)
         costo = col(VentaItem.cantidad) * col(VentaItem.costo_usd)
         por_venta = (
-            select((func.sum(importe) - func.sum(costo)).label("ganancia"))
-            .group_by(col(VentaItem.venta_id))
+            select(
+                (func.sum(importe) - func.sum(costo) - col(Venta.comision_usd)).label("ganancia")
+            )
+            .select_from(VentaItem)
+            .join(Venta, col(Venta.id) == col(VentaItem.venta_id))
+            .group_by(col(Venta.id))
             .having(func.count() == func.count(col(VentaItem.costo_usd)))
             .subquery()
         )

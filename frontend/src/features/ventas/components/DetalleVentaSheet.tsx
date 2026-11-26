@@ -1,7 +1,9 @@
 import { TrashIcon, WarningIcon } from "@phosphor-icons/react"
-import type { ReactNode } from "react"
+import { useState, type FormEvent, type ReactNode } from "react"
 import { Link } from "react-router"
+import { toast } from "sonner"
 
+import { ApiError, mensajeDeError } from "@/shared/api"
 import {
   formatearARS,
   formatearDiaDe,
@@ -9,6 +11,8 @@ import {
 } from "@/shared/lib/formato"
 import { Badge } from "@/shared/ui/badge"
 import { Button } from "@/shared/ui/button"
+import { Field, FieldError, FieldLabel } from "@/shared/ui/field"
+import { InputUSD } from "@/shared/ui/input-usd"
 import { Separator } from "@/shared/ui/separator"
 import {
   Sheet,
@@ -18,8 +22,10 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@/shared/ui/sheet"
+import { Spinner } from "@/shared/ui/spinner"
 
-import { esAdmin, type Venta } from "../api"
+import { esAdmin, type Venta, type VentaAdmin } from "../api"
+import { useCambiarComision } from "../queries"
 import { MODALIDAD, nombreProducto } from "./etiquetas"
 
 type Props = {
@@ -28,13 +34,26 @@ type Props = {
   onCerrar: () => void
   /** Sin esta función (sin permiso), no se ofrece borrar. */
   onBorrar?: (venta: Venta) => void
+  /** La venta como quedó después de cambiar la comisión. */
+  onActualizada: (venta: Venta) => void
 }
 
-export function DetalleVentaSheet({ venta, onCerrar, onBorrar }: Props) {
+export function DetalleVentaSheet({
+  venta,
+  onCerrar,
+  onBorrar,
+  onActualizada,
+}: Props) {
   return (
     <Sheet open={venta !== null} onOpenChange={(a) => !a && onCerrar()}>
       <SheetContent className="flex flex-col sm:max-w-lg">
-        {venta && <Detalle venta={venta} onBorrar={onBorrar} />}
+        {venta && (
+          <Detalle
+            venta={venta}
+            onBorrar={onBorrar}
+            onActualizada={onActualizada}
+          />
+        )}
       </SheetContent>
     </Sheet>
   )
@@ -43,9 +62,11 @@ export function DetalleVentaSheet({ venta, onCerrar, onBorrar }: Props) {
 function Detalle({
   venta: v,
   onBorrar,
+  onActualizada,
 }: {
   venta: Venta
   onBorrar?: (venta: Venta) => void
+  onActualizada: (venta: Venta) => void
 }) {
   return (
     <>
@@ -174,6 +195,11 @@ function Detalle({
                   ? "Sin costo cargado"
                   : formatearUSD(v.costo_usd)}
               </Fila>
+              {Number(v.comision_usd) > 0 && (
+                <Fila etiqueta="Comisión">
+                  − {formatearUSD(v.comision_usd)}
+                </Fila>
+              )}
               {v.ganancia_usd !== null && (
                 <Fila etiqueta="Ganancia">
                   {formatearUSD(v.ganancia_usd)}
@@ -184,6 +210,10 @@ function Detalle({
             </>
           )}
         </section>
+
+        {esAdmin(v) && (
+          <Comision key={v.id} venta={v} onGuardada={onActualizada} />
+        )}
       </div>
 
       {onBorrar && (
@@ -195,6 +225,64 @@ function Detalle({
         </SheetFooter>
       )}
     </>
+  )
+}
+
+/** Montos de la API (`"50.00"`) como los escribe el usuario (`"50"`, `"80,5"`). */
+const comoTexto = (usd: string) => Number(usd).toString().replace(".", ",")
+
+function Comision({
+  venta,
+  onGuardada,
+}: {
+  venta: VentaAdmin
+  onGuardada: (venta: VentaAdmin) => void
+}) {
+  const [valor, setValor] = useState(comoTexto(venta.comision_usd))
+  const cambiar = useCambiarComision()
+  // El 422 del campo o, si no, el motivo general (por ejemplo, la venta ya no existe).
+  const error =
+    cambiar.error &&
+    ((cambiar.error instanceof ApiError && cambiar.error.campos.comision_usd) ||
+      mensajeDeError(cambiar.error))
+
+  function guardar(e: FormEvent) {
+    e.preventDefault()
+    cambiar.mutate(
+      { id: venta.id, comision: valor.trim() },
+      {
+        onSuccess: (v) => {
+          onGuardada(v)
+          toast.success(`Se guardó la comisión de la venta #${v.id}.`)
+        },
+      }
+    )
+  }
+
+  return (
+    <form onSubmit={guardar}>
+      <Field data-invalid={error ? true : undefined}>
+        <FieldLabel htmlFor="detalle-comision">Comisión</FieldLabel>
+        <div className="flex gap-2">
+          <InputUSD
+            id="detalle-comision"
+            placeholder="0"
+            className="sm:w-48"
+            value={valor}
+            onChange={(e) => {
+              if (cambiar.error) cambiar.reset()
+              setValor(e.target.value)
+            }}
+            aria-invalid={error ? true : undefined}
+          />
+          <Button type="submit" variant="outline" disabled={cambiar.isPending}>
+            {cambiar.isPending && <Spinner />}
+            Guardar
+          </Button>
+        </div>
+        {error && <FieldError>{error}</FieldError>}
+      </Field>
+    </form>
   )
 }
 

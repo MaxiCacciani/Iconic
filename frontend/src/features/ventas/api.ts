@@ -34,5 +34,10 @@ export const ventasApi = {
     }),
   crear: (datos: DatosVenta) =>
     pedir<Venta>("/ventas", { method: "POST", body: datos }),
+  cambiarComision: (id: number, comision: string) =>
+    pedir<VentaAdmin>(`/ventas/${id}/comision`, {
+      method: "PATCH",
+      body: { comision_usd: comision },
+    }),
   eliminar: (id: number) => pedir<null>(`/ventas/${id}`, { method: "DELETE" }),
 }

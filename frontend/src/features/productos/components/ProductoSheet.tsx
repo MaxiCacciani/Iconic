@@ -268,7 +268,9 @@ function Formulario({
                     onChange={(e) => cambiar({ cantidad: e.target.value })}
                     aria-invalid={invalido("cantidad")}
                   />
-                  <FieldDescription>Unidades en esta fila.</FieldDescription>
+                  <FieldDescription>
+                    Unidades en esta fila. En 0 queda sin stock.
+                  </FieldDescription>
                   {error("cantidad")}
                 </Field>
               )}

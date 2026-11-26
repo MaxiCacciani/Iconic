@@ -601,6 +601,23 @@ export interface paths {
     patch?: never
     trace?: never
   }
+  "/ventas/{venta_id}/comision": {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    post?: never
+    delete?: never
+    options?: never
+    head?: never
+    /** Cambiar Comision */
+    patch: operations["cambiar_comision_ventas__venta_id__comision_patch"]
+    trace?: never
+  }
   "/ventas/{venta_id}": {
     parameters: {
       query?: never
@@ -915,6 +932,11 @@ export interface components {
       /** Localidad Id */
       localidad_id?: number | null
     }
+    /** ComisionUpdate */
+    ComisionUpdate: {
+      /** Comision Usd */
+      comision_usd: number | string
+    }
     /**
      * Condicion
      * @enum {string}
@@ -937,7 +959,10 @@ export interface components {
       saldo_ars: string | null
       /** Costo Usd */
       costo_usd: string | null
-      /** Ganancia Usd */
+      /**
+       * Ganancia Usd
+       * @description Total − costo − comisión.
+       */
       ganancia_usd: string | null
       /** Margen Pct */
       margen_pct: string | null
@@ -959,6 +984,12 @@ export interface components {
       modalidad: components["schemas"]["Modalidad"]
       /** Canje Valor Usd */
       canje_valor_usd?: (number | string) | null
+      /**
+       * Comision Usd
+       * @description Solo del Administrador: la de un Vendedor se ignora.
+       * @default 0
+       */
+      comision_usd: number | string
     }
     /**
      * CotizacionVendedor
@@ -1333,7 +1364,7 @@ export interface components {
       tamanio: number
       /**
        * Ganancia Total Usd
-       * @description Ganancia registrada de todas las ventas, sumando solo las que tienen costo.
+       * @description Ganancia registrada de todas las ventas (descontada la comisión), sumando solo las que tienen costo.
        */
       ganancia_total_usd: string
     }
@@ -1821,6 +1852,12 @@ export interface components {
       modalidad: components["schemas"]["Modalidad"]
       /** Canje Valor Usd */
       canje_valor_usd?: (number | string) | null
+      /**
+       * Comision Usd
+       * @description Solo del Administrador: la de un Vendedor se ignora.
+       * @default 0
+       */
+      comision_usd: number | string
       /** Cliente Id */
       cliente_id: number
       /** Metodo Pago Id */
@@ -1863,9 +1900,14 @@ export interface components {
       saldo_usd: string
       /** Saldo Ars */
       saldo_ars: string
+      /** Comision Usd */
+      comision_usd: string
       /** Costo Usd */
       costo_usd: string | null
-      /** Ganancia Usd */
+      /**
+       * Ganancia Usd
+       * @description Total − costo − comisión.
+       */
       ganancia_usd: string | null
       /** Margen Pct */
       margen_pct: string | null
@@ -3950,6 +3992,41 @@ export interface operations {
           "application/json":
             | components["schemas"]["VentaReadAdmin"]
             | components["schemas"]["VentaReadVendedor"]
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"]
+        }
+      }
+    }
+  }
+  cambiar_comision_ventas__venta_id__comision_patch: {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        venta_id: number
+      }
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["ComisionUpdate"]
+      }
+    }
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          "application/json": components["schemas"]["VentaReadAdmin"]
         }
       }
       /** @description Validation Error */

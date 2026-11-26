@@ -43,6 +43,9 @@ class ProductoRepository(RepositorioBase[Producto]):
         consulta = select(Producto).join(Modelo, col(Producto.modelo_id) == col(Modelo.id))
         if filtros.estado:
             consulta = consulta.where(Producto.estado == filtros.estado)
+        if filtros.estado == EstadoProductoEnum.disponible:
+            # Disponible es lo que se puede vender: un accesorio en 0 no se ofrece.
+            consulta = consulta.where(Producto.cantidad > 0)
         if filtros.categoria_id:
             consulta = consulta.where(Modelo.categoria_id == filtros.categoria_id)
         if filtros.modelo_id:
@@ -79,14 +82,15 @@ class ProductoRepository(RepositorioBase[Producto]):
         ).all()
 
     def disponibles_por_categoria(self, categoria_ids: set[int]) -> Sequence[Producto]:
-        """Los disponibles de esas categorías, del más antiguo al más nuevo: el primero es
-        el que lleva más tiempo en el stock."""
+        """Los disponibles (con unidades) de esas categorías, del más antiguo al más nuevo:
+        el primero es el que lleva más tiempo en el stock."""
         return self.session.exec(
             select(Producto)
             .join(Modelo, col(Producto.modelo_id) == col(Modelo.id))
             .where(
                 col(Modelo.categoria_id).in_(categoria_ids),
                 Producto.estado == EstadoProductoEnum.disponible,
+                Producto.cantidad > 0,
             )
             .options(*_CARGAR)
             .order_by(col(Producto.id))
