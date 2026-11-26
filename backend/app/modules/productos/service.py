@@ -11,6 +11,7 @@ from app.common.base import Pagina, ParamsPagina
 from app.common.enums import Condicion, EstadoProductoEnum
 from app.core.excepciones import NoEncontrado
 from app.core.uow import UnidadDeTrabajo
+from app.modules.packs.repository import PackRepository
 from app.modules.productos import dominio
 from app.modules.productos.factory import ProductoFactory
 from app.modules.productos.models import Producto
@@ -39,14 +40,14 @@ class ProductoService:
     ) -> Pagina[ProductoReadAdmin] | Pagina[ProductoReadVendedor]:
         pagina = self.productos.buscar(filtros, params)
         tc = self.tipo_cambio.valor_hoy()
-        items = [self._leer(p, tc, con_costos) for p in pagina.items]
+        items = [self.leer(p, tc, con_costos) for p in pagina.items]
         datos = pagina.model_dump(exclude={"items"})
         if con_costos:
             return Pagina[ProductoReadAdmin](items=items, **datos)  # type: ignore[arg-type]
         return Pagina[ProductoReadVendedor](items=items, **datos)
 
     def obtener(self, id: int, con_costos: bool) -> ProductoReadAdmin | ProductoReadVendedor:
-        return self._leer(self._detalle(id), self.tipo_cambio.valor_hoy(), con_costos)
+        return self.leer(self._detalle(id), self.tipo_cambio.valor_hoy(), con_costos)
 
     def stock(self) -> tuple[int, int]:
         """Unidades disponibles y cuántas de ellas son nuevas (para Resumen)."""
@@ -76,6 +77,8 @@ class ProductoService:
         with self.uow:
             producto = self.productos.obtener_o_falla(id)
             producto.verificar_borrable()
+            # Si era el producto fijo de un pack, el ítem se va con él (ON DELETE CASCADE).
+            PackRepository(self.uow.session).borrar_items_de_producto(id)
             self.productos.eliminar(producto)
 
     # ─── Armado de las lecturas ──────────────────────────────────────────────
@@ -86,7 +89,7 @@ class ProductoService:
         return producto
 
     @staticmethod
-    def _leer(
+    def leer(
         p: Producto, tc: Decimal | None, con_costos: bool
     ) -> ProductoReadAdmin | ProductoReadVendedor:
         def ref(x: Any) -> Referencia | None:

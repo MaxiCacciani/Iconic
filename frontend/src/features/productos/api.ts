@@ -28,10 +28,10 @@ export function tieneCostos(p: Producto): p is ProductoAdmin {
   return "costo_usd" in p
 }
 
-function consulta(f: FiltrosStock): string {
+function consulta(f: FiltrosStock, tamanio: number): string {
   const params = new URLSearchParams({
     pagina: String(f.pagina),
-    tamanio: String(TAMANIO_PAGINA),
+    tamanio: String(tamanio),
   })
   if (f.estado) params.set("estado", f.estado)
   if (f.categoriaId) params.set("categoria_id", String(f.categoriaId))
@@ -41,8 +41,14 @@ function consulta(f: FiltrosStock): string {
 }
 
 export const productosApi = {
-  listar: (filtros: FiltrosStock, signal?: AbortSignal) =>
-    pedir<PaginaProductos>(`/productos?${consulta(filtros)}`, { signal }),
+  listar: (
+    filtros: FiltrosStock,
+    signal?: AbortSignal,
+    tamanio = TAMANIO_PAGINA
+  ) =>
+    pedir<PaginaProductos>(`/productos?${consulta(filtros, tamanio)}`, {
+      signal,
+    }),
   crear: (datos: DatosProducto) =>
     pedir<ProductoAdmin>("/productos", { method: "POST", body: datos }),
   actualizar: (id: number, datos: DatosProducto) =>

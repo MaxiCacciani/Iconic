@@ -13,6 +13,26 @@ export const productosKeys = {
   todo: ["productos"] as const,
   lista: (filtros: FiltrosStock) =>
     [...productosKeys.todo, "lista", filtros] as const,
+  buscador: (texto: string) =>
+    [...productosKeys.todo, "buscador", texto] as const,
+}
+
+/** Cuántos resultados muestra el buscador: si no está, se sigue escribiendo. */
+const RESULTADOS_BUSCADOR = 8
+
+/** Para el buscador: los primeros disponibles que coinciden con lo escrito. */
+export function useBuscarProductosQuery(texto: string, habilitado: boolean) {
+  return useQuery({
+    queryKey: productosKeys.buscador(texto),
+    queryFn: ({ signal }) =>
+      productosApi.listar(
+        { buscar: texto, estado: "disponible", pagina: 1 },
+        signal,
+        RESULTADOS_BUSCADOR
+      ),
+    enabled: habilitado,
+    placeholderData: keepPreviousData,
+  })
 }
 
 export function useStockQuery(filtros: FiltrosStock) {
@@ -34,6 +54,8 @@ function useAlGuardar() {
         queryKey: catalogosKeys.catalogo("defectos"),
       }),
       queryClient.invalidateQueries({ queryKey: ["resumen"] }),
+      // Los packs muestran cuántas unidades hay, y borrar un producto lo saca del pack.
+      queryClient.invalidateQueries({ queryKey: ["packs"] }),
     ])
 }
 

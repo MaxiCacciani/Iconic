@@ -25,7 +25,7 @@ import {
 
 import { tieneCostos, type Producto } from "../api"
 import { Bateria } from "./Bateria"
-import { CONDICION, ESTADO } from "./etiquetas"
+import { CONDICION, ESTADO, variante } from "./etiquetas"
 
 type Props = {
   productos: Producto[]
@@ -34,11 +34,6 @@ type Props = {
   /** Sin estas acciones (Vendedor), la fila no tiene menú. */
   onEditar?: (producto: Producto) => void
   onBorrar?: (producto: Producto) => void
-}
-
-/** "128 GB · Negro", lo que diferencia a dos equipos del mismo modelo. */
-function variante(p: Producto): string {
-  return [p.capacidad?.nombre, p.color?.nombre].filter(Boolean).join(" · ")
 }
 
 /** Lo propio de cada tipo: IMEI, controles o unidades. */
