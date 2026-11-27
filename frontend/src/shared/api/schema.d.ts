@@ -1962,6 +1962,11 @@ export interface components {
       hoy: components["schemas"]["VentasDelPeriodo"]
       /** @description Hoy incluido. */
       ultimos_7_dias: components["schemas"]["VentasDelPeriodo"]
+      /**
+       * Solo Propias
+       * @description El Vendedor ve solo las ventas que registró él; el admin, todas.
+       */
+      solo_propias: boolean
     }
   }
   responses: never

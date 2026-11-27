@@ -171,6 +171,7 @@ export function PasoPago() {
               id="canje"
               campo="canje."
               imeiOpcional
+              sinAccesorios
             />
             {campos.canje && <FieldError>{campos.canje}</FieldError>}
           </FieldGroup>

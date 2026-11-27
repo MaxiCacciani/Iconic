@@ -16,13 +16,16 @@ import type { Resumen } from "../api"
 
 const cuantas = (n: number) => (n === 1 ? "1 venta" : `${n} ventas`)
 
-/** Ventas de hoy y de los últimos 7 días. En pesos, cada una con su TC congelado. */
+/** Ventas de hoy y de los últimos 7 días. En pesos, cada una con su TC congelado. Al
+ * Vendedor la API le manda solo las suyas (`solo_propias`). */
 export function TarjetaVentas({ ventas }: { ventas: Resumen["ventas"] }) {
-  const { hoy, ultimos_7_dias: semana } = ventas
+  const { hoy, ultimos_7_dias: semana, solo_propias: propias } = ventas
   return (
     <Card className="max-w-md">
       <CardHeader>
-        <CardDescription>Ventas de hoy</CardDescription>
+        <CardDescription>
+          {propias ? "Tus ventas de hoy" : "Ventas de hoy"}
+        </CardDescription>
         <CardTitle className="font-heading text-4xl tabular-nums">
           {formatearUSD(hoy.total_usd)}
         </CardTitle>
@@ -38,7 +41,9 @@ export function TarjetaVentas({ ventas }: { ventas: Resumen["ventas"] }) {
       <CardContent className="flex flex-col gap-1 text-sm text-muted-foreground tabular-nums">
         <p>
           {hoy.cantidad === 0
-            ? "Todavía no hubo ventas hoy."
+            ? propias
+              ? "Todavía no registraste ventas hoy."
+              : "Todavía no hubo ventas hoy."
             : `${cuantas(hoy.cantidad)} · ${formatearARS(hoy.total_ars)}`}
         </p>
         <p>

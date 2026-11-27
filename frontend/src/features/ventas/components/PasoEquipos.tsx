@@ -42,6 +42,7 @@ export function PasoEquipos() {
         onSuccess: (r) => {
           despachar({
             tipo: "agregar",
+            sumar: true,
             lineas: r.lineas.map((l) => ({
               producto: l.producto,
               cantidad: String(l.cantidad),

@@ -47,7 +47,9 @@ export const BORRADOR_VACIO: Borrador = {
 type NuevaLinea = Pick<Linea, "producto" | "cantidad" | "esRegalo">
 
 export type Accion =
-  | { tipo: "agregar"; lineas: NuevaLinea[] }
+  /** `sumar`: si el producto ya está, se le suman las unidades (packs). Si no, el
+   * que ya está queda como está (el buscador). */
+  | { tipo: "agregar"; lineas: NuevaLinea[]; sumar?: boolean }
   | { tipo: "linea"; clave: number; cambios: Partial<Linea> }
   | { tipo: "quitar"; clave: number }
   | { tipo: "cambiar"; cambios: Partial<Borrador> }
@@ -59,17 +61,25 @@ export function reducir(b: Borrador, accion: Accion): Borrador {
   switch (accion.tipo) {
     case "agregar": {
       let clave = b.ultimaClave
-      // El mismo producto en el mismo tipo de renglón ya está: no se repite.
-      const nuevas = accion.lineas
-        .filter(
-          (n) =>
-            !b.lineas.some(
-              (l) =>
-                l.producto.id === n.producto.id && l.esRegalo === n.esRegalo
-            )
+      const lineas = [...b.lineas]
+      for (const n of accion.lineas) {
+        // El mismo producto en el mismo tipo de renglón va en un solo renglón.
+        const i = lineas.findIndex(
+          (l) => l.producto.id === n.producto.id && l.esRegalo === n.esRegalo
         )
-        .map((n) => ({ ...n, clave: ++clave, precio: precioDe(n.producto) }))
-      return { ...b, lineas: [...b.lineas, ...nuevas], ultimaClave: clave }
+        if (i === -1) {
+          lineas.push({ ...n, clave: ++clave, precio: precioDe(n.producto) })
+        } else if (accion.sumar) {
+          // Un pack puede traer más unidades de un accesorio que ya está en el
+          // carrito (la API ya descontó las del carrito): se suman a ese renglón.
+          const l = lineas[i]
+          lineas[i] = {
+            ...l,
+            cantidad: String((Number(l.cantidad) || 1) + Number(n.cantidad)),
+          }
+        }
+      }
+      return { ...b, lineas, ultimaClave: clave }
     }
     case "linea":
       return {

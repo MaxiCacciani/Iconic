@@ -28,6 +28,7 @@ def test_avisa_que_falta_el_tc_a_los_dos_roles(client, admin, vendedor):
             "ventas": {
                 "hoy": {"cantidad": 0, "total_usd": "0", "total_ars": "0"},
                 "ultimos_7_dias": {"cantidad": 0, "total_usd": "0", "total_ars": "0"},
+                "solo_propias": usuario is vendedor,
             },
         }
 

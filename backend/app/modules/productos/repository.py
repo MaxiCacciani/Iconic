@@ -105,6 +105,20 @@ class ProductoRepository(RepositorioBase[Producto]):
             )
         ).first()
 
+    def otro_con_imei(self, producto: Producto) -> Producto | None:
+        """Otro producto con el IMEI de este que impide devolverlo al stock: uno no vendido
+        (chocaría con el índice) o uno cargado después, aunque ya se haya vendido (el mismo
+        equipo volvió a entrar por canje)."""
+        return self.session.exec(
+            select(Producto)
+            .where(
+                Producto.imei == producto.imei,
+                Producto.id != producto.id,
+                or_(Producto.estado != EstadoProductoEnum.vendido, Producto.id > producto.id),  # type: ignore[operator]
+            )
+            .order_by(col(Producto.id))
+        ).first()
+
     def unidades(self, estado: EstadoProductoEnum, condicion: Condicion | None = None) -> int:
         """Unidades (no filas): un accesorio por cantidad suma todas las suyas."""
         consulta = select(func.coalesce(func.sum(Producto.cantidad), 0)).where(

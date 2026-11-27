@@ -396,9 +396,49 @@ def test_no_se_borra_si_el_equipo_volvio_con_el_mismo_imei(client, admin, datos,
     r = client.delete(f"/ventas/{primera['id']}", headers=auth_header(admin))
     assert r.status_code == 409
     assert r.json()["detail"] == (
-        f"No se puede borrar la venta: el iPhone 15 #{datos.iphone} volvió a entrar al stock "
-        f"con el mismo IMEI (producto #{segunda['canje']['producto']['id']})."
+        f"No se puede borrar la venta: el iPhone 15 #{datos.iphone} volvió a entrar con el "
+        f"mismo IMEI (producto #{segunda['canje']['producto']['id']})."
     )
+
+
+def test_no_se_borra_si_el_equipo_volvio_y_se_revendio(client, admin, datos, tc, session):
+    primera = vender(client, admin, venta(datos, [item(datos.iphone, "1000")])).json()
+    segunda = vender(
+        client,
+        admin,
+        venta(
+            datos,
+            [item(datos.cable_x5, "10")],
+            canje_valor_usd="5",
+            canje=canje(datos, imei=IMEI_1),
+        ),
+    ).json()
+    vuelto = segunda["canje"]["producto"]["id"]
+    # El equipo que volvió se vende otra vez: ya no está en el stock, pero lo tiene otro
+    # cliente, así que el de la primera venta no puede volver a estar disponible.
+    assert vender(client, admin, venta(datos, [item(vuelto, "900")])).status_code == 201
+
+    r = client.delete(f"/ventas/{primera['id']}", headers=auth_header(admin))
+    assert r.status_code == 409
+    assert f"(producto #{vuelto})" in r.json()["detail"]
+    session.expire_all()
+    assert session.get(Producto, datos.iphone).estado == EstadoProductoEnum.vendido
+
+
+def test_un_accesorio_no_entra_por_canje(client, admin, datos, tc, session):
+    cable = session.exec(select(Modelo).where(Modelo.nombre == "USB-C 1 m")).one()
+    r = vender(
+        client,
+        admin,
+        venta(
+            datos,
+            [item(datos.iphone, "1000")],
+            canje_valor_usd="5",
+            canje={"modelo_id": cable.id, "condicion": "usado"},
+        ),
+    )
+    assert errores(r) == {"canje.modelo_id": "Cable no se toma en canje: solo equipos y consolas."}
+    assert session.exec(select(Venta)).all() == []
 
 
 def test_un_producto_con_ventas_no_se_borra(client, admin, datos, tc):
@@ -425,8 +465,18 @@ def test_resumen_de_ventas(client, admin, vendedor, datos, tc, session):
     )
     session.commit()
 
-    ventas = client.get("/resumen", headers=auth_header(vendedor)).json()["ventas"]
+    ventas = client.get("/resumen", headers=auth_header(admin)).json()["ventas"]
     assert ventas == {
         "hoy": {"cantidad": 2, "total_usd": "1020.00", "total_ars": "1020000.00"},
         "ultimos_7_dias": {"cantidad": 3, "total_usd": "1040.00", "total_ars": "1040000.00"},
+        "solo_propias": False,
+    }
+
+    # El Vendedor ve solo las que registró él, igual que en el historial.
+    vender(client, vendedor, venta(datos, [item(datos.cable_x5, "10")]))
+    ventas = client.get("/resumen", headers=auth_header(vendedor)).json()["ventas"]
+    assert ventas == {
+        "hoy": {"cantidad": 1, "total_usd": "10.00", "total_ars": "10000.00"},
+        "ultimos_7_dias": {"cantidad": 1, "total_usd": "10.00", "total_ars": "10000.00"},
+        "solo_propias": True,
     }

@@ -48,10 +48,11 @@ class VentaRepository(RepositorioBase[Venta]):
     def con_detalle(self, id: int) -> Venta | None:
         return self.session.exec(select(Venta).where(Venta.id == id).options(*_CARGAR)).first()
 
-    def desde(self, instante: datetime) -> Sequence[Venta]:
-        return self.session.exec(
-            select(Venta).where(Venta.fecha >= instante).options(selectinload(Venta.items))  # type: ignore[arg-type]
-        ).all()
+    def desde(self, instante: datetime, usuario_id: int | None = None) -> Sequence[Venta]:
+        consulta = select(Venta).where(Venta.fecha >= instante)  # type: ignore[arg-type]
+        if usuario_id is not None:
+            consulta = consulta.where(Venta.usuario_id == usuario_id)
+        return self.session.exec(consulta.options(selectinload(Venta.items))).all()
 
     def ganancia_total(self) -> Decimal:
         """Total − costo − comisión de cada venta, sumando solo las que tienen el costo de

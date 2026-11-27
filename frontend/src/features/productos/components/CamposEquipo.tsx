@@ -70,7 +70,10 @@ export function useTipoDeCategoria(categoriaId: string) {
   const tipos = useCatalogoQuery("tipos-categoria")
   const categoria = categorias.data?.find((c) => c.id === Number(categoriaId))
   const tipo = tipos.data?.find((t) => t.id === categoria?.tipo_categoria_id)
-  return { categorias, categoria, tipo }
+  const porCantidad = new Set(
+    tipos.data?.filter((t) => t.por_cantidad).map((t) => t.id)
+  )
+  return { categorias, categoria, tipo, porCantidad }
 }
 
 type Tipo = ReturnType<typeof useTipoDeCategoria>["tipo"]
@@ -100,6 +103,9 @@ type Props = {
   /** Prefijo de los campos en los errores de la API (`"canje."`). */
   campo?: string
   imeiOpcional?: boolean
+  /** Sin las categorías por cantidad (accesorios): el canje solo toma equipos y
+   * consolas. La API lo valida igual. */
+  sinAccesorios?: boolean
 }
 
 /** Categoría, modelo, capacidad, color, condición y los datos que pide el tipo de la
@@ -111,10 +117,16 @@ export function CamposEquipo({
   id,
   campo = "",
   imeiOpcional = false,
+  sinAccesorios = false,
 }: Props) {
   const categoriaId = Number(e.categoriaId) || undefined
   const modeloId = Number(e.modeloId) || undefined
-  const { categorias, categoria, tipo } = useTipoDeCategoria(e.categoriaId)
+  const { categorias, categoria, tipo, porCantidad } = useTipoDeCategoria(
+    e.categoriaId
+  )
+  const ofrecidas = sinAccesorios
+    ? categorias.data?.filter((c) => !porCantidad.has(c.tipo_categoria_id))
+    : categorias.data
   const modelos = useCatalogoQuery("modelos", categoriaId, {
     habilitado: categoriaId !== undefined,
   })
@@ -148,7 +160,7 @@ export function CamposEquipo({
               <SelectValue placeholder="Elegí una categoría" />
             </SelectTrigger>
             <SelectContent>
-              {categorias.data?.map((c) => (
+              {ofrecidas?.map((c) => (
                 <SelectItem key={c.id} value={String(c.id)}>
                   {c.nombre}
                 </SelectItem>

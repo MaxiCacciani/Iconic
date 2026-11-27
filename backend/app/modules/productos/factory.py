@@ -11,7 +11,8 @@ Reglas 2.1 y 2.2:
   si cambian o cambia el modelo.
 - Precio mayor a 0 y costo entre 0 y el precio.
 
-`desde_canje`: el equipo que entra por plan canje (reglas 4.5).
+`desde_canje`: el equipo que entra por plan canje (reglas 4.5). Solo equipos y consolas:
+un accesorio por cantidad no se toma en canje.
 """
 
 from decimal import Decimal
@@ -53,7 +54,13 @@ class ProductoFactory:
     def desde_canje(self, datos: dict[str, Any], valor: Decimal) -> Producto:
         """El equipo que entrega el cliente: entra disponible, con precio = costo = valor
         del canje y proveedor "Plan canje". El IMEI es opcional, pero si se carga se valida
-        igual. Todavía no está en la sesión."""
+        igual. Un accesorio por cantidad no entra por canje. Todavía no está en la sesión."""
+        modelo = self.session.get(Modelo, datos.get("modelo_id"))
+        if modelo is not None and modelo.categoria.tipo.por_cantidad:
+            raise ErrorDeCampo(
+                "modelo_id",
+                f"{modelo.categoria.nombre} no se toma en canje: solo equipos y consolas.",
+            )
         proveedor = self.session.exec(
             select(Proveedor).where(func.lower(Proveedor.nombre) == PROVEEDOR_CANJE.lower())
         ).first()

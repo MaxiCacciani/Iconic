@@ -40,6 +40,9 @@ class VentasDelPeriodo(BaseModel):
 class VentasRead(BaseModel):
     hoy: VentasDelPeriodo
     ultimos_7_dias: VentasDelPeriodo = Field(description="Hoy incluido.")
+    solo_propias: bool = Field(
+        description="El Vendedor ve solo las ventas que registró él; el admin, todas."
+    )
 
 
 class ResumenRead(BaseModel):

@@ -236,10 +236,13 @@ class VentaService:
     def obtener(self, id: int, con_costos: bool) -> VentaReadAdmin | VentaReadVendedor:
         return self._leer(self._detalle(id), con_costos)
 
-    def desde_el_dia(self, dia: date) -> tuple[int, Decimal, Decimal]:
+    def desde_el_dia(
+        self, dia: date, usuario_id: int | None = None
+    ) -> tuple[int, Decimal, Decimal]:
         """Las ventas desde ese día (en Argentina) hasta ahora: cantidad, total en USD y en
-        pesos, cada una con su TC congelado. Para Resumen."""
-        ventas = self.ventas.desde(reloj.inicio_del_dia(dia))
+        pesos, cada una con su TC congelado. Con `usuario_id`, solo las que registró ese
+        usuario (como en el historial). Para Resumen."""
+        ventas = self.ventas.desde(reloj.inicio_del_dia(dia), usuario_id)
         totales = [(dominio.total(v.items), v.tc_ars) for v in ventas]  # type: ignore[arg-type]
         return (
             len(ventas),
@@ -261,11 +264,11 @@ class VentaService:
             for item in venta.items:
                 producto = item.producto
                 if producto.imei and producto.estado == EstadoProductoEnum.vendido:
-                    otro = self.productos.en_stock_por_imei(producto.imei)
+                    otro = self.productos.otro_con_imei(producto)
                     if otro is not None:
                         raise Conflicto(
                             f"No se puede borrar la venta: el {producto.modelo.nombre} "
-                            f"#{producto.id} volvió a entrar al stock con el mismo IMEI "
+                            f"#{producto.id} volvió a entrar con el mismo IMEI "
                             f"(producto #{otro.id})."
                         )
                 producto.devolver(item.cantidad)
