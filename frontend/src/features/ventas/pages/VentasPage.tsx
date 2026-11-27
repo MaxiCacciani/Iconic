@@ -57,6 +57,8 @@ export function VentasPage() {
     eliminar.mutate(venta.id, {
       onSuccess: () => {
         setAbierta(null)
+        // Era la última de la página: se vuelve a la anterior en vez de mostrarla vacía.
+        if (pagina > 1 && ventas.data?.items.length === 1) irA(pagina - 1)
         toast.success(`Se borró la venta #${venta.id}.`)
       },
       // Si devolver el stock lo dejaría inconsistente, el motivo lo da la API.

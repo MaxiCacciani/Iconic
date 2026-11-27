@@ -12,8 +12,9 @@ import { ventasApi, type DatosVenta } from "./api"
 export const ventasKeys = {
   todo: ["ventas"] as const,
   lista: (pagina: number) => [...ventasKeys.todo, "lista", pagina] as const,
-  cotizacion: (datos: DatosVenta) =>
-    [...ventasKeys.todo, "cotizacion", datos] as const,
+  // Fuera de `todo`: al vender se invalida `todo`, y volver a cotizar productos que
+  // ya se vendieron daría un 422.
+  cotizacion: (datos: DatosVenta) => ["cotizacion-venta", datos] as const,
 }
 
 export function useVentasQuery(pagina: number) {

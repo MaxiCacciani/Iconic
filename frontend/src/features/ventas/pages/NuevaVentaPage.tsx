@@ -93,7 +93,7 @@ export function NuevaVentaPage() {
       cliente_id: b.cliente?.id ?? null,
       metodo_pago_id: b.metodoPagoId ? Number(b.metodoPagoId) : null,
       vendedor_numero: limpio(b.vendedorNumero),
-      garantia_meses: b.garantiaMeses.trim(),
+      garantia_meses: limpio(b.garantiaMeses),
     })
     crear.mutate(datos, {
       onSuccess: (v) => {
