@@ -90,7 +90,13 @@ export function TablaStock({
               </TableCell>
               <TableCell className="whitespace-normal">
                 <div className="flex flex-col gap-0.5">
-                  <span className="font-medium">{p.modelo.nombre}</span>
+                  <span className="flex items-center gap-2 font-medium">
+                    {p.modelo.nombre}
+                    {/* Solo un accesorio por cantidad llega a 0: se repone editándolo. */}
+                    {p.cantidad === 0 && (
+                      <Badge variant="destructive">Sin stock</Badge>
+                    )}
+                  </span>
                   <span className="text-xs text-muted-foreground">
                     {[p.categoria.nombre, variante(p)]
                       .filter(Boolean)

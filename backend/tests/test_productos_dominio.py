@@ -95,9 +95,12 @@ def test_solo_se_edita_y_borra_lo_disponible():
 
 
 def test_el_producto_delega_en_su_estado():
+    from app.modules.catalogos.models import Categoria, Modelo, TipoCategoria
     from app.modules.productos.models import Producto
 
-    p = Producto(modelo_id=1, proveedor_id=1, condicion="nuevo", precio_usd=Decimal("10"))
+    equipo = Categoria(nombre="iPhone", tipo=TipoCategoria(nombre="Equipo con IMEI"))
+    modelo = Modelo(nombre="iPhone 15", categoria=equipo)
+    p = Producto(modelo=modelo, proveedor_id=1, condicion="nuevo", precio_usd=Decimal("10"))
     assert p.estado == E.disponible
     p.reservar()
     assert p.estado == E.reservado

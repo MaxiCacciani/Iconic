@@ -297,6 +297,19 @@ def test_aplicar_accesorios_por_cantidad(client, admin, stock):
     assert lineas(r) == [(stock.cable_x3, 1, True), (stock.cable_x5, 3, True)]
 
 
+def test_aplicar_salta_los_accesorios_en_0(client, admin, stock, session):
+    session.get(Producto, stock.cable_x3).cantidad = 0  # se vendió entero
+    session.commit()
+    items = [{"categoria_id": stock.cable, "cantidad": 2}]
+    pack = crear(client, admin, nombre="P", items=items).json()
+    assert lineas(aplicar(client, admin, pack["id"])) == [(stock.cable_x5, 2, False)]
+    # Fijo en 0: sin stock, y el pack no va.
+    pack = crear(client, admin, nombre="Q", items=[{"producto_id": stock.cable_x3}]).json()
+    assert sin_stock(aplicar(client, admin, pack["id"])) == (
+        f"No se pudo agregar el pack por falta de stock de USB-C 1 m #{stock.cable_x3}."
+    )
+
+
 def sin_stock(r) -> str:
     assert r.status_code == 409, r.text
     return r.json()["detail"]

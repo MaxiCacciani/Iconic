@@ -22,6 +22,8 @@ Extras = Annotated[str, StringConstraints(strip_whitespace=True, max_length=500)
 Bateria = Annotated[int, Field(ge=1, le=100)]
 Controles = Annotated[int, Field(ge=0, le=4)]
 Cantidad = Annotated[int, Field(ge=1)]
+# El stock de la fila: un accesorio por cantidad puede quedar en 0 (sin stock).
+CantidadStock = Annotated[int, Field(ge=0)]
 
 
 class ProductoCreate(BaseModel):
@@ -40,7 +42,7 @@ class ProductoCreate(BaseModel):
     bateria: Bateria | None = None
     controles: Controles | None = None
     extras: Extras | None = None
-    cantidad: Cantidad = 1
+    cantidad: CantidadStock = 1
     precio_usd: PrecioUSD
     costo_usd: USD | None = None
     defecto_ids: list[int] = []
@@ -61,7 +63,7 @@ class ProductoUpdate(BaseModel):
     bateria: Bateria | None = None
     controles: Controles | None = None
     extras: Extras | None = None
-    cantidad: Cantidad | None = None
+    cantidad: CantidadStock | None = None
     precio_usd: PrecioUSD | None = None
     costo_usd: USD | None = None
     defecto_ids: list[int] | None = None

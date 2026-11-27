@@ -136,7 +136,7 @@ CREATE TABLE productos (
     bateria      smallint        CHECK (bateria BETWEEN 1 AND 100),
     controles    smallint        CHECK (controles BETWEEN 0 AND 4),
     extras       text,
-    cantidad     int             NOT NULL DEFAULT 1 CHECK (cantidad >= 1),
+    cantidad     int             NOT NULL DEFAULT 1 CHECK (cantidad >= 0), -- 0: accesorio sin stock
     precio_usd   numeric(12,2)   NOT NULL CHECK (precio_usd > 0),
     costo_usd    numeric(12,2)   CHECK (costo_usd >= 0 AND costo_usd <= precio_usd),
     estado       estado_producto NOT NULL DEFAULT 'disponible',
@@ -207,6 +207,7 @@ CREATE TABLE ventas (
     anticipo_usd      numeric(12,2) NOT NULL DEFAULT 0 CHECK (anticipo_usd >= 0),
     canje_valor_usd   numeric(12,2) CHECK (canje_valor_usd >= 0),
     garantia_meses    smallint      NOT NULL DEFAULT 3 CHECK (garantia_meses >= 0),
+    comision_usd      numeric(12,2) NOT NULL DEFAULT 0 CHECK (comision_usd >= 0),
     CHECK ((modalidad = 'cuotas') = (cantidad_cuotas IS NOT NULL)),
     CHECK ((canje_producto_id IS NULL) = (canje_valor_usd IS NULL))
 );

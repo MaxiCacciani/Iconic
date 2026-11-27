@@ -5,9 +5,10 @@ ganancias, se separan en `ResumenReadVendedor` y `ResumenReadAdmin`.
 """
 
 from datetime import date
+from decimal import Decimal
 from enum import StrEnum
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 
 class TipoAviso(StrEnum):
@@ -28,7 +29,24 @@ class StockRead(BaseModel):
     nuevas: int
 
 
+class VentasDelPeriodo(BaseModel):
+    """En pesos, cada venta con su TC congelado: lo que realmente se cobró."""
+
+    cantidad: int
+    total_usd: Decimal
+    total_ars: Decimal
+
+
+class VentasRead(BaseModel):
+    hoy: VentasDelPeriodo
+    ultimos_7_dias: VentasDelPeriodo = Field(description="Hoy incluido.")
+    solo_propias: bool = Field(
+        description="El Vendedor ve solo las ventas que registró él; el admin, todas."
+    )
+
+
 class ResumenRead(BaseModel):
     fecha: date
     avisos: list[AvisoRead]
     stock: StockRead
+    ventas: VentasRead

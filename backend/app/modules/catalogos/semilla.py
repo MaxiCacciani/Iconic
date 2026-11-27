@@ -31,7 +31,9 @@ CATEGORIAS = {
     "Accesorio": ["Vidrio templado", "Cargador", "Cable", "Funda/Case", "Otro accesorio"],
 }
 
-PROVEEDORES = ["Plan canje", "Importación personal", "Mariano Camara", "Lucas Bertorello"]
+# El equipo que entra por plan canje se carga con este proveedor (reglas 4.5).
+PROVEEDOR_CANJE = "Plan canje"
+PROVEEDORES = [PROVEEDOR_CANJE, "Importación personal", "Mariano Camara", "Lucas Bertorello"]
 
 METODOS_PAGO = ["Transferencia", "Débito", "Crédito", "Efectivo"]  # el primero, predeterminado
 

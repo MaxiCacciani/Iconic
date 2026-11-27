@@ -26,7 +26,7 @@ export const router = createBrowserRouter([
         ErrorBoundary: ErrorPage,
         children: [
           // Cada sección se carga recién cuando se abre (un chunk por feature).
-          ...SECCIONES.flatMap(({ ruta, permiso, cargar, detalle }) => {
+          ...SECCIONES.flatMap(({ ruta, permiso, cargar, detalle, nueva }) => {
             const conPermiso =
               (cargarPagina: () => Promise<ComponentType>) => async () => {
                 const Pagina = await cargarPagina()
@@ -43,6 +43,9 @@ export const router = createBrowserRouter([
                 ...(ruta === "/" ? { index: true } : { path: ruta.slice(1) }),
                 lazy: conPermiso(cargar),
               },
+              ...(nueva
+                ? [{ path: `${ruta.slice(1)}/nueva`, lazy: conPermiso(nueva) }]
+                : []),
               ...(detalle
                 ? [{ path: `${ruta.slice(1)}/:id`, lazy: conPermiso(detalle) }]
                 : []),

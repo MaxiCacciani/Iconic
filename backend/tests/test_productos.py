@@ -6,6 +6,7 @@ from datetime import date
 import pytest
 from sqlmodel import Session, select
 
+from app.common.enums import EstadoProductoEnum
 from app.common.tipos import luhn_valido
 from app.core import reloj
 from app.modules.catalogos.models import (
@@ -182,9 +183,10 @@ def test_equipo_sin_imei(client, admin, datos):
     assert _errores(_crear(client, admin, {**body, "bateria": 90}))["bateria"] == (
         "AirPods no lleva batería."
     )
-    assert _errores(_crear(client, admin, {**body, "cantidad": 3}))["cantidad"].startswith(
-        "AirPods va de a una unidad"
-    )
+    for cantidad in (0, 3):
+        assert _errores(_crear(client, admin, {**body, "cantidad": cantidad}))[
+            "cantidad"
+        ].startswith("AirPods va de a una unidad")
 
 
 def test_consola_con_controles_y_extras(client, admin, datos):
@@ -210,11 +212,19 @@ def test_accesorio_por_cantidad(client, admin, datos):
         "precio_usd": "15",
         "cantidad": 10,
     }
-    assert _crear(client, admin, body).json()["cantidad"] == 10
+    pid = _crear(client, admin, body).json()["id"]
     assert _errores(_crear(client, admin, {**body, "controles": 1}))["controles"] == (
         "Cargador no lleva controles."
     )
-    assert "cantidad" in _errores(_crear(client, admin, {**body, "cantidad": 0}))
+    assert "cantidad" in _errores(_crear(client, admin, {**body, "cantidad": -1}))
+    # Se puede cargar sin stock (en 0) y se repone editando la cantidad.
+    assert _crear(client, admin, {**body, "cantidad": 0}).json()["cantidad"] == 0
+    h = auth_header(admin)
+    r = client.patch(f"/productos/{pid}", json={"cantidad": 0}, headers=h)
+    assert (r.json()["cantidad"], r.json()["estado"]) == (0, "disponible")
+    assert (
+        client.patch(f"/productos/{pid}", json={"cantidad": 7}, headers=h).json()["cantidad"] == 7
+    )
 
 
 def test_color_y_capacidad_entre_las_opciones_del_modelo(client, admin, datos):
@@ -425,10 +435,15 @@ def test_filtros_y_paginas(client, admin, datos, session):
     todos = ids()
     assert todos == sorted(todos, reverse=True)  # los últimos cargados, primero
 
-    session.get(Producto, todos[0]).vender()
+    # El cargador se vende entero: sigue disponible en 0, pero no se ofrece para vender.
+    cargador = session.get(Producto, todos[0])
+    cargador.vender(cargador.cantidad)
     session.commit()
+    assert (cargador.estado, cargador.cantidad) == (EstadoProductoEnum.disponible, 0)
+    assert todos[0] not in ids(estado="disponible")
     assert len(ids(estado="disponible")) == 2
-    assert len(ids(estado="vendido")) == 1
+    assert ids(estado="vendido") == []
+    assert len(ids()) == 3
 
     r = client.get("/productos", params={"tamanio": 2, "pagina": 2}, headers=h).json()
     assert r["total"] == 3 and len(r["items"]) == 1
