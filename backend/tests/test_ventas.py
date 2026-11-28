@@ -115,8 +115,10 @@ def test_cotizar_por_rol(client, admin, vendedor, datos, tc):
         "total_usd": "670",
         "total_ars": "670000.00",
         "canje_usd": "200",
+        "anticipo_usd": "0",
         "saldo_usd": "470",
         "saldo_ars": "470000.00",
+        "cuotas": [],
         "costo_usd": "712.00",
         "ganancia_usd": "-42.00",
         "margen_pct": "-5.9",
@@ -124,7 +126,15 @@ def test_cotizar_por_rol(client, admin, vendedor, datos, tc):
     }
 
     r = client.post("/ventas/cotizar", json=body, headers=auth_header(vendedor))
-    assert set(r.json()) == {"total_usd", "total_ars", "canje_usd", "saldo_usd", "saldo_ars"}
+    assert set(r.json()) == {
+        "total_usd",
+        "total_ars",
+        "canje_usd",
+        "anticipo_usd",
+        "saldo_usd",
+        "saldo_ars",
+        "cuotas",
+    }
 
 
 def test_cotizar_sin_tc_no_tiene_pesos(client, vendedor, datos):
@@ -147,8 +157,8 @@ def test_cotizar_sin_tc_no_tiene_pesos(client, vendedor, datos):
         ),
         (
             {"items": [{"producto_id": 1, "precio_usd": "10"}], "modalidad": "cuotas"},
-            "modalidad",
-            "Por ahora solo se puede vender al contado.",
+            "cantidad_cuotas",
+            "Elegí en cuántas cuotas.",
         ),
     ],
 )

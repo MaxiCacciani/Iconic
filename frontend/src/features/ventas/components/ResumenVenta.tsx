@@ -1,7 +1,11 @@
 import { CheckIcon } from "@phosphor-icons/react"
 
 import { AvisoTipoCambio, useTipoCambioHoy } from "@/features/tipo-cambio"
-import { formatearARS, formatearUSD } from "@/shared/lib/formato"
+import {
+  formatearARS,
+  formatearFecha,
+  formatearUSD,
+} from "@/shared/lib/formato"
 import { cn } from "@/shared/lib/utils"
 import { Alert, AlertDescription } from "@/shared/ui/alert"
 import { Button } from "@/shared/ui/button"
@@ -66,10 +70,13 @@ export function ResumenVenta({
             {Number(c.canje_usd) > 0 && (
               <Monto etiqueta="Canje" usd={c.canje_usd} restar />
             )}
+            {Number(c.anticipo_usd) > 0 && (
+              <Monto etiqueta="Anticipo" usd={c.anticipo_usd} restar />
+            )}
             <Separator />
             <div className="flex flex-col gap-0.5">
               <span className="text-sm text-muted-foreground">
-                Saldo a pagar
+                {c.cuotas.length > 0 ? "A financiar" : "Saldo a pagar"}
               </span>
               <span className="font-heading text-3xl tabular-nums">
                 {formatearUSD(c.saldo_usd)}
@@ -80,6 +87,27 @@ export function ResumenVenta({
                 </span>
               )}
             </div>
+            {c.cuotas.length > 0 && (
+              <section className="flex flex-col gap-1.5">
+                <h3 className="text-sm text-muted-foreground">
+                  {c.cuotas.length} cuotas
+                </h3>
+                <ol className="flex max-h-48 flex-col gap-1 overflow-y-auto text-sm tabular-nums">
+                  {c.cuotas.map((cuota) => (
+                    <li
+                      key={cuota.numero}
+                      className="flex justify-between gap-4"
+                    >
+                      <span className="text-muted-foreground">
+                        {cuota.numero}. {formatearFecha(cuota.vencimiento)}
+                        {cuota.cobrada && " · cobrada hoy"}
+                      </span>
+                      {formatearUSD(cuota.monto_usd)}
+                    </li>
+                  ))}
+                </ol>
+              </section>
+            )}
             {esAdmin(c) && (
               <>
                 <Separator />

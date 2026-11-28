@@ -49,3 +49,13 @@ export function formatearDiaDe(instante: string): string {
     : `${instante}Z`
   return diaEnArgentina.format(new Date(conZona))
 }
+
+const mesYAnio = new Intl.DateTimeFormat("es-AR", {
+  month: "long",
+  year: "numeric",
+})
+
+/** `(2026, 11)` → `noviembre de 2026` */
+export function formatearMes(anio: number, mes: number): string {
+  return mesYAnio.format(new Date(anio, mes - 1, 1))
+}

@@ -3,8 +3,7 @@
 Lo que se puede calcular no se guarda: el total, el costo y la ganancia salen de los ítems
 (`dominio.py`). Cada ítem guarda el precio y el costo del momento de la venta.
 
-Faltan columnas de fases siguientes, que en `schema.sql` ya están y toman su valor por
-defecto: `reserva_id` (Fase 9), `cantidad_cuotas` y `anticipo_usd` (Fase 8).
+Falta `reserva_id` (Fase 9): en `schema.sql` ya está y toma su valor por defecto.
 """
 
 from datetime import UTC, datetime
@@ -17,6 +16,7 @@ from sqlmodel import Field, Relationship, SQLModel
 from app.common.enums import Modalidad
 from app.modules.catalogos.models import MetodoPago
 from app.modules.clientes.models import Cliente
+from app.modules.cobros.models import Cobro
 from app.modules.productos.models import Producto
 from app.modules.usuarios.models import Usuario
 from app.modules.vendedores.models import Vendedor
@@ -64,6 +64,10 @@ class Venta(SQLModel, table=True):
     modalidad: Modalidad = Field(
         sa_column=Column(SAEnum(Modalidad, name="modalidad"), nullable=False)
     )
+    cantidad_cuotas: int | None = Field(default=None, sa_column=Column(SmallInteger))
+    anticipo_usd: Decimal = Field(
+        default=Decimal(0), sa_column=Column(Numeric(12, 2), nullable=False)
+    )
     # El TC congelado al vender: el historial refleja lo que realmente se cobró.
     tc_ars: Decimal = Field(sa_column=Column(Numeric(12, 2), nullable=False))
     garantia_meses: int = Field(default=3, sa_column=Column(SmallInteger, nullable=False))
@@ -74,6 +78,11 @@ class Venta(SQLModel, table=True):
 
     items: list[VentaItem] = Relationship(
         cascade_delete=True, sa_relationship_kwargs={"order_by": "VentaItem.id"}
+    )
+    cobros: list[Cobro] = Relationship(
+        back_populates="venta",
+        cascade_delete=True,
+        sa_relationship_kwargs={"order_by": "Cobro.numero_cuota"},
     )
     cliente: Cliente = Relationship()
     usuario: Usuario = Relationship()

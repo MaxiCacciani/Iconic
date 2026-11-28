@@ -5,6 +5,7 @@ import {
   useQueryClient,
 } from "@tanstack/react-query"
 
+import { clientesKeys } from "@/features/clientes"
 import { productosKeys } from "@/features/productos"
 
 import { ventasApi, type DatosVenta } from "./api"
@@ -38,12 +39,18 @@ export function useCotizacionQuery(datos: DatosVenta, habilitada: boolean) {
 
 function useAlGuardar() {
   const queryClient = useQueryClient()
-  // Vender o borrar una venta cambia el stock, los packs (unidades) y el Resumen.
+  // Vender o borrar una venta cambia el stock, los packs (unidades), el Resumen y las
+  // cuotas (agenda y ficha del cliente).
   return () =>
     Promise.all(
-      [ventasKeys.todo, productosKeys.todo, ["packs"], ["resumen"]].map(
-        (queryKey) => queryClient.invalidateQueries({ queryKey })
-      )
+      [
+        ventasKeys.todo,
+        productosKeys.todo,
+        ["packs"],
+        ["resumen"],
+        ["cobros"],
+        clientesKeys.todo,
+      ].map((queryKey) => queryClient.invalidateQueries({ queryKey }))
     )
 }
 
@@ -75,5 +82,20 @@ export function useEliminarVenta() {
   return useMutation({
     mutationFn: (id: number) => ventasApi.eliminar(id),
     onSuccess: alGuardar,
+  })
+}
+
+/** Genera el PDF en la API y lo guarda como `venta-<id>.pdf`. */
+export function useDescargarComprobante() {
+  return useMutation({
+    mutationFn: (id: number) => ventasApi.comprobante(id),
+    onSuccess: (archivo, id) => {
+      const url = URL.createObjectURL(archivo)
+      const enlace = document.createElement("a")
+      enlace.href = url
+      enlace.download = `venta-${id}.pdf`
+      enlace.click()
+      URL.revokeObjectURL(url)
+    },
   })
 }

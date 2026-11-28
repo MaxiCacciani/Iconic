@@ -7,7 +7,7 @@ Cambiar la comisión y borrar una venta es solo del Administrador.
 
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, Query, status
+from fastapi import APIRouter, Depends, Query, Response, status
 
 from app.common.base import ParamsPagina
 from app.common.enums import Rol
@@ -60,6 +60,23 @@ def listar(
 def crear(datos: VentaCreate, uow: UowDep, usuario: Logueado) -> VentaReadAdmin | VentaReadVendedor:
     """Sin TC del día, 422. Con un dato inválido, 422 en ese campo y no se graba nada."""
     return VentaService(uow).crear(datos, usuario, con_costos=usuario.rol == Rol.admin)
+
+
+@router.get(
+    "/{venta_id}/comprobante",
+    response_class=Response,
+    responses={200: {"content": {"application/pdf": {}}}},
+)
+def comprobante(venta_id: int, uow: UowDep, usuario: Logueado) -> Response:
+    """El comprobante en PDF, sin costos. El Vendedor, solo el de sus ventas."""
+    pdf = VentaService(uow).comprobante(
+        venta_id, usuario_id=None if usuario.rol == Rol.admin else usuario.id
+    )
+    return Response(
+        pdf,
+        media_type="application/pdf",
+        headers={"Content-Disposition": f'attachment; filename="venta-{venta_id}.pdf"'},
+    )
 
 
 @router.patch(

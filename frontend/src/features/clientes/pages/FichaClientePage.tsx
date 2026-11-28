@@ -27,6 +27,7 @@ import { Skeleton } from "@/shared/ui/skeleton"
 import type { Cliente } from "../api"
 import { ClienteSheet } from "../components/ClienteSheet"
 import { ConfirmarBorrarCliente } from "../components/ConfirmarBorrarCliente"
+import { CuotasCliente } from "../components/CuotasCliente"
 import { useClienteQuery, useEliminarCliente } from "../queries"
 
 function Volver() {
@@ -51,8 +52,8 @@ function Dato({ titulo, valor }: { titulo: string; valor: string | null }) {
   )
 }
 
-/** La ficha arranca con los datos básicos. Compras, cuotas, reservas y reclamos se suman
- * en las fases siguientes. */
+/** Los datos básicos y el plan de cuotas. Compras, reservas y reclamos se suman en las
+ * fases siguientes. */
 export function FichaClientePage() {
   const id = Number(useParams().id)
   const { puede } = useAuth()
@@ -178,6 +179,8 @@ export function FichaClientePage() {
           </dl>
         </CardContent>
       </Card>
+
+      <CuotasCliente clienteId={cliente.id} />
 
       <ClienteSheet
         abierto={edicion.abierta}

@@ -14,15 +14,15 @@ Al cerrar una fase, marcala acá.
 - [x] Fase 5 — Clientes
 - [x] Fase 6 — Vendedores y packs
 - [x] Fase 7 — Ventas al contado y canje
-- [ ] Fase 8 — Cuotas, cobros y agenda ← **siguiente**
-- [ ] Fase 9 — Reservas
+- [x] Fase 8 — Cuotas, cobros y agenda
+- [ ] Fase 9 — Reservas ← **siguiente**
 - [ ] Fase 10 — Garantías
 - [ ] Fase 11 — Reclamos
 - [ ] Fase 12 — Cierre
 
-## Estado actual (26/11/2026, Fase 7)
+## Estado actual (28/11/2026, Fase 8)
 
-**Verificado:** `uv run pytest` pasa 280 tests, `ruff` está limpio, y `npm run build`, `typecheck` y `oxlint` pasan sin errores ni avisos. `docker compose up` levanta todo y la app responde en `localhost:8080`.
+**Verificado:** `uv run pytest` pasa 319 tests, `ruff` está limpio, y `npm run build`, `typecheck` y `oxlint` pasan sin errores ni avisos. `docker compose up` levanta todo y la app responde en `localhost:8080`.
 
 **Fase 0:** completa. Además, `schema.sql` ya tiene las tablas del DER (26 al cerrar la fase; 28 desde que se sumaron `modelo_colores` y `modelo_capacidades`) (los catálogos iniciales pasaron a la semilla de la Fase 3). Las clases SQLModel solo existen para `usuarios`: las demás se escriben en su fase.
 
@@ -118,6 +118,18 @@ Al cerrar una fase, marcala acá.
   - **Resumen por rol:** el Vendedor ve solo las ventas que registró él, igual que en el historial; `ventas.solo_propias` le dice al front que muestre "Tus ventas de hoy".
   - **Pack con un accesorio que ya está en el carrito:** las unidades del pack se suman a ese renglón en vez de perderse (`agregar` con `sumar`).
 - Tests: 8 de dominio (montos, Strategy y stock al vender y devolver) y 20 de API (con casos parametrizados) (cotizar por rol, stock del carrito, sin TC, stock y TC congelado, canje, atomicidad, historial por rol, borrado con sus dos rechazos, producto con ventas y Resumen).
+
+**Fase 8:** completa y probada en el navegador con los dos roles (SQLite).
+- `ventas.dominio`: `dividir` (cuotas redondeadas a dólares enteros, la última ajusta: US$ 1.000 en 6 = 5 × 167 + 165), `sumar_meses` (siempre desde el día original: 31/01 → 28/02 → 31/03) y `plan_de_cuotas` (la primera al mes siguiente o, con "primera cuota hoy", hoy y cobrada).
+- Strategy `ModalidadPago.planear(total, canje, pago, dia) -> Plan` con `Contado` (ignora anticipo y cuotas) y `EnCuotas` (de 2 a 60 cuotas, anticipo y anticipo + canje que no cubran el total, cuotas de al menos US$ 1). El service no pregunta por la modalidad: guarda lo que devuelve el `Plan`.
+- `ventas` suma `cantidad_cuotas` y `anticipo_usd`; la venta y la cotización devuelven `anticipo_usd`, `saldo_usd` (total − canje − anticipo: en cuotas, lo que se financia) y las cuotas.
+- `cobros` con SQLModel y State `EstadoCobro` (`cobros/estados.py`): `Pendiente`, `Vencida` (se calcula: pendiente con fecha anterior a hoy) y `Cobrada`. Cobrar dos veces da 409. Borrar la venta borra sus cuotas, cobradas o no.
+- `GET /cobros?anio=&mes=` (sin mes, el actual) y `POST /cobros/{id}/cobrar`, solo admin. **Decisión:** cobrar no se deshace (las reglas no lo piden); el front lo confirma antes.
+- `GET /clientes/{id}/cuotas` (los dos roles): saldo (cuotas sin cobrar), "en mora" y por venta pagadas/total, próxima cuota y desde cuándo está en mora.
+- `GET /ventas/{id}/comprobante`: PDF con ReportLab (`ventas/comprobante.py`), armado desde el DTO del Vendedor (sin costos). El Vendedor solo baja el de sus ventas (404 si no).
+- Resumen: `cobros_del_mes` (total, cobrado y pendiente de las cuotas que vencen en el mes) y el aviso `cuotas_vencidas`, **solo para el admin** (el Vendedor no tiene agenda).
+- En el front: modalidad en cuotas en el wizard (cantidad, anticipo, primera cuota hoy) con el plan en el panel de resumen; cuotas y "Descargar comprobante" en el detalle de la venta (`pedirArchivo` en `shared/api`); agenda en `/cobros` con el mes en la URL y cobro con confirmación; plan de cuotas en la ficha del cliente; tarjeta de cobros y aviso de vencidas en Resumen. `EstadoCuota` en `shared/ui`.
+- Tests: 20 de dominio (división, fin de mes, `EnCuotas`, State) y 16 de API (cotizar y vender en cuotas, primera hoy, contado sin cobros, rechazos sin grabar, agenda, cobrar y 409, permisos, ficha con mora, borrado, comprobante por rol y Resumen).
 
 **Decisiones confirmadas (21/11/2026):**
 - Los usuarios se **desactivan, no se borran**, porque ventas y reservas guardan `usuario_id`.

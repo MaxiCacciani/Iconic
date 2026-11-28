@@ -25,6 +25,7 @@ _CARGAR = (
     selectinload(Venta.usuario),  # type: ignore[arg-type]
     selectinload(Venta.vendedor),  # type: ignore[arg-type]
     selectinload(Venta.metodo_pago),  # type: ignore[arg-type]
+    selectinload(Venta.cobros),  # type: ignore[arg-type]
 )
 
 

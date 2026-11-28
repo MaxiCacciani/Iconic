@@ -30,6 +30,9 @@ def test_avisa_que_falta_el_tc_a_los_dos_roles(client, admin, vendedor):
                 "ultimos_7_dias": {"cantidad": 0, "total_usd": "0", "total_ars": "0"},
                 "solo_propias": usuario is vendedor,
             },
+            "cobros_del_mes": None
+            if usuario is vendedor
+            else {"total_usd": "0", "cobrado_usd": "0", "pendiente_usd": "0"},
         }
 
 

@@ -58,26 +58,101 @@ export function PasoCliente() {
 }
 
 export function PasoModalidad() {
-  const { campos } = useVenta()
+  const { b, despachar, campos } = useVenta()
+  const cambiar = (cambios: Partial<typeof b>) =>
+    despachar({ tipo: "cambiar", cambios })
+
   return (
-    <Field data-invalid={campos.modalidad ? true : undefined}>
-      <FieldLabel id="venta-modalidad">Modalidad</FieldLabel>
-      <RadioGroup aria-labelledby="venta-modalidad" value="contado">
-        <Field orientation="horizontal">
-          <RadioGroupItem value="contado" id="venta-contado" />
-          <FieldLabel htmlFor="venta-contado" className="font-normal">
-            Contado: pago único. El canje se descuenta del saldo.
-          </FieldLabel>
-        </Field>
-        <Field orientation="horizontal" data-disabled>
-          <RadioGroupItem value="cuotas" id="venta-cuotas" disabled />
-          <FieldLabel htmlFor="venta-cuotas" className="font-normal">
-            En cuotas (todavía no disponible)
-          </FieldLabel>
-        </Field>
-      </RadioGroup>
-      {campos.modalidad && <FieldError>{campos.modalidad}</FieldError>}
-    </Field>
+    <FieldGroup>
+      <Field data-invalid={campos.modalidad ? true : undefined}>
+        <FieldLabel id="venta-modalidad">Modalidad</FieldLabel>
+        <RadioGroup
+          aria-labelledby="venta-modalidad"
+          value={b.modalidad}
+          onValueChange={(v) => cambiar({ modalidad: v as typeof b.modalidad })}
+        >
+          <Field orientation="horizontal">
+            <RadioGroupItem value="contado" id="venta-contado" />
+            <FieldLabel htmlFor="venta-contado" className="font-normal">
+              Contado: pago único. El canje se descuenta del saldo.
+            </FieldLabel>
+          </Field>
+          <Field orientation="horizontal">
+            <RadioGroupItem value="cuotas" id="venta-cuotas" />
+            <FieldLabel htmlFor="venta-cuotas" className="font-normal">
+              En cuotas: se financia el total menos el anticipo y el canje.
+            </FieldLabel>
+          </Field>
+        </RadioGroup>
+        {campos.modalidad && <FieldError>{campos.modalidad}</FieldError>}
+      </Field>
+
+      {b.modalidad === "cuotas" && (
+        <FieldSet>
+          <FieldLegend>Plan de cuotas</FieldLegend>
+          <FieldGroup>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <Field data-invalid={campos.cantidad_cuotas ? true : undefined}>
+                <FieldLabel htmlFor="venta-cantidad-cuotas">
+                  Cantidad de cuotas
+                </FieldLabel>
+                <InputGroup>
+                  <InputGroupInput
+                    id="venta-cantidad-cuotas"
+                    inputMode="numeric"
+                    autoComplete="off"
+                    placeholder="De 2 a 60"
+                    className="tabular-nums"
+                    value={b.cantidadCuotas}
+                    onChange={(e) =>
+                      cambiar({ cantidadCuotas: e.target.value })
+                    }
+                    aria-invalid={campos.cantidad_cuotas ? true : undefined}
+                  />
+                  <InputGroupAddon align="inline-end">
+                    <InputGroupText>cuotas</InputGroupText>
+                  </InputGroupAddon>
+                </InputGroup>
+                {campos.cantidad_cuotas && (
+                  <FieldError>{campos.cantidad_cuotas}</FieldError>
+                )}
+              </Field>
+              <Field data-invalid={campos.anticipo_usd ? true : undefined}>
+                <FieldLabel htmlFor="venta-anticipo">
+                  Anticipo (opcional)
+                </FieldLabel>
+                <InputUSD
+                  id="venta-anticipo"
+                  placeholder="0"
+                  value={b.anticipo}
+                  onChange={(e) => cambiar({ anticipo: e.target.value })}
+                  aria-invalid={campos.anticipo_usd ? true : undefined}
+                />
+                {campos.anticipo_usd && (
+                  <FieldError>{campos.anticipo_usd}</FieldError>
+                )}
+              </Field>
+            </div>
+            <Field orientation="horizontal">
+              <Switch
+                id="venta-primera-hoy"
+                checked={b.primeraCuotaHoy}
+                onCheckedChange={(primeraCuotaHoy) =>
+                  cambiar({ primeraCuotaHoy })
+                }
+              />
+              <FieldLabel htmlFor="venta-primera-hoy" className="font-normal">
+                Primera cuota hoy: queda cobrada al registrar la venta
+              </FieldLabel>
+            </Field>
+            <FieldDescription>
+              Una cuota por mes, el mismo día de la venta. Sin la primera hoy,
+              la primera vence el mes que viene.
+            </FieldDescription>
+          </FieldGroup>
+        </FieldSet>
+      )}
+    </FieldGroup>
   )
 }
 

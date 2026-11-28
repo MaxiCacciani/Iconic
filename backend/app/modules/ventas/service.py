@@ -23,12 +23,14 @@ from typing import Any
 from sqlmodel import col, select
 
 from app.common.base import Pagina, ParamsPagina
-from app.common.enums import EstadoProductoEnum
+from app.common.enums import EstadoCobroEnum, EstadoProductoEnum
 from app.core import reloj
 from app.core.excepciones import Conflicto, ErrorDeCampo, NoEncontrado, ReglaInvalida
 from app.core.uow import UnidadDeTrabajo
 from app.modules.catalogos.models import MetodoPago
 from app.modules.clientes.models import Cliente
+from app.modules.cobros.models import Cobro
+from app.modules.cobros.service import cuota
 from app.modules.packs.repository import PackRepository
 from app.modules.productos.dominio import en_pesos, ganancia, margen_pct
 from app.modules.productos.factory import ProductoFactory
@@ -41,7 +43,8 @@ from app.modules.vendedores.models import Vendedor
 from app.modules.vendedores.repository import VendedorRepository
 from app.modules.vendedores.schemas import VendedorRead
 from app.modules.ventas import dominio
-from app.modules.ventas.modalidades import modalidad_de
+from app.modules.ventas.comprobante import comprobante_pdf
+from app.modules.ventas.modalidades import Pago, Plan, modalidad_de
 from app.modules.ventas.models import Venta, VentaItem
 from app.modules.ventas.repository import VentaRepository
 from app.modules.ventas.schemas import (
@@ -49,6 +52,7 @@ from app.modules.ventas.schemas import (
     CotizacionAdmin,
     CotizacionCreate,
     CotizacionVendedor,
+    CuotaCotizada,
     ItemVentaAdmin,
     ItemVentaVendedor,
     PaginaVentasAdmin,
@@ -81,14 +85,22 @@ class VentaService:
         lineas = self._lineas(datos)
         total = dominio.total(lineas)  # type: ignore[arg-type]
         canje = datos.canje_valor_usd or Decimal(0)
-        modalidad_de(datos.modalidad).validar(total, canje)
+        plan = self._planear(datos, total)
+        saldo = total - canje - plan.anticipo
         tc = self.tipo_cambio.valor_hoy()
         base: dict[str, Any] = {
             "total_usd": total,
             "total_ars": en_pesos(total, tc),
             "canje_usd": canje,
-            "saldo_usd": total - canje,
-            "saldo_ars": en_pesos(total - canje, tc),
+            "anticipo_usd": plan.anticipo,
+            "saldo_usd": saldo,
+            "saldo_ars": en_pesos(saldo, tc),
+            "cuotas": [
+                CuotaCotizada(
+                    numero=c.numero, vencimiento=c.vencimiento, monto_usd=c.monto, cobrada=c.cobrada
+                )
+                for c in plan.cuotas
+            ],
         }
         if not con_costos:
             return CotizacionVendedor(**base)
@@ -106,8 +118,8 @@ class VentaService:
     def crear(
         self, datos: VentaCreate, actor: Usuario, con_costos: bool
     ) -> VentaReadAdmin | VentaReadVendedor:
-        """Reglas 4.7: la venta con el TC congelado y el detalle de cada ítem, el stock
-        vendido y el equipo del canje al stock. Todo junto o nada."""
+        """Reglas 4.7: la venta con el TC congelado y el detalle de cada ítem, sus cuotas,
+        el stock vendido y el equipo del canje al stock. Todo junto o nada."""
         with self.uow:
             tc = self.tipo_cambio.valor_hoy()
             if tc is None:
@@ -115,10 +127,7 @@ class VentaService:
                     "Falta cargar el tipo de cambio de hoy: sin TC no se registra la venta."
                 )
             lineas = self._lineas(datos)
-            modalidad_de(datos.modalidad).validar(
-                dominio.total(lineas),  # type: ignore[arg-type]
-                datos.canje_valor_usd or Decimal(0),
-            )
+            plan = self._planear(datos, dominio.total(lineas))  # type: ignore[arg-type]
             if self.uow.session.get(Cliente, datos.cliente_id) is None:
                 raise ErrorDeCampo("cliente_id", "Ese cliente no existe.")
             metodo = self._metodo_pago(datos.metodo_pago_id)
@@ -136,13 +145,38 @@ class VentaService:
                     canje_valor_usd=datos.canje_valor_usd,
                     metodo_pago_id=metodo.id,  # type: ignore[arg-type]
                     modalidad=datos.modalidad,
+                    cantidad_cuotas=plan.cantidad_cuotas,
+                    anticipo_usd=plan.anticipo,
                     tc_ars=tc,
                     garantia_meses=datos.garantia_meses,
                     comision_usd=datos.comision_usd if con_costos else Decimal(0),
                     items=lineas,
+                    cobros=[
+                        Cobro(
+                            numero_cuota=c.numero,
+                            fecha_vencimiento=c.vencimiento,
+                            monto_usd=c.monto,
+                            estado=EstadoCobroEnum.cobrada
+                            if c.cobrada
+                            else EstadoCobroEnum.pendiente,
+                        )
+                        for c in plan.cuotas
+                    ],
                 )
             )
         return self.obtener(venta.id, con_costos)  # type: ignore[arg-type]
+
+    @staticmethod
+    def _planear(datos: CotizacionCreate, total: Decimal) -> Plan:
+        """Valida los montos según la modalidad y arma las cuotas desde hoy."""
+        pago = Pago(
+            anticipo=datos.anticipo_usd,
+            cantidad_cuotas=datos.cantidad_cuotas,
+            primera_cuota_hoy=datos.primera_cuota_hoy,
+        )
+        return modalidad_de(datos.modalidad).planear(
+            total, datos.canje_valor_usd or Decimal(0), pago, reloj.hoy()
+        )
 
     def _lineas(self, datos: CotizacionCreate) -> list[VentaItem]:
         """Los ítems, validados contra el stock: cada producto existe y está disponible, y
@@ -250,6 +284,13 @@ class VentaService:
             sum((en_pesos(t, tc) for t, tc in totales), Decimal(0)),  # type: ignore[misc]
         )
 
+    def comprobante(self, id: int, usuario_id: int | None) -> bytes:
+        """Con `usuario_id`, solo si la registró ese usuario: otra venta es un 404."""
+        venta = self._detalle(id)
+        if usuario_id is not None and venta.usuario_id != usuario_id:
+            raise NoEncontrado(f"La venta #{id} no existe.")
+        return comprobante_pdf(self._leer(venta, con_costos=False))  # type: ignore[arg-type]
+
     def cambiar_comision(self, id: int, comision: Decimal) -> VentaReadAdmin:
         with self.uow:
             venta = self._detalle(id)
@@ -258,7 +299,7 @@ class VentaService:
 
     # ─── Borrar ──────────────────────────────────────────────────────────────
     def eliminar(self, id: int) -> None:
-        """Reglas 4.9: borra la venta (y sus cuotas) y devuelve el stock."""
+        """Reglas 4.9: borra la venta y sus cuotas, cobradas o no, y devuelve el stock."""
         with self.uow:
             venta = self._detalle(id)
             for item in venta.items:
@@ -304,7 +345,8 @@ class VentaService:
 
     def _leer(self, v: Venta, con_costos: bool) -> VentaReadAdmin | VentaReadVendedor:
         total = dominio.total(v.items)  # type: ignore[arg-type]
-        saldo = total - (v.canje_valor_usd or Decimal(0))
+        saldo = total - (v.canje_valor_usd or Decimal(0)) - v.anticipo_usd
+        hoy = reloj.hoy()
         base: dict[str, Any] = {
             "id": v.id,
             "fecha": v.fecha,
@@ -313,6 +355,7 @@ class VentaService:
             "vendedor": VendedorRead.model_validate(v.vendedor) if v.vendedor else None,
             "metodo_pago": _ref(v.metodo_pago),
             "modalidad": v.modalidad,
+            "cantidad_cuotas": v.cantidad_cuotas,
             "tc_ars": v.tc_ars,
             "garantia_meses": v.garantia_meses,
             "canje": None
@@ -323,8 +366,10 @@ class VentaService:
             ),
             "total_usd": total,
             "total_ars": en_pesos(total, v.tc_ars),
+            "anticipo_usd": v.anticipo_usd,
             "saldo_usd": saldo,
             "saldo_ars": en_pesos(saldo, v.tc_ars),
+            "cuotas": [cuota(c, hoy) for c in v.cobros],
         }
 
         def item(i: VentaItem) -> ItemVentaAdmin | ItemVentaVendedor:

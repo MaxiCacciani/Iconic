@@ -12,6 +12,8 @@ from app.common.base import ParamsPagina
 from app.core.deps import UowDep, solo_admin, usuario_actual
 from app.modules.clientes.schemas import ClienteCreate, ClienteRead, ClienteUpdate, PaginaClientes
 from app.modules.clientes.service import ClienteService
+from app.modules.cobros.schemas import CuotasClienteRead
+from app.modules.cobros.service import CobroService
 
 router = APIRouter(
     prefix="/clientes",
@@ -34,6 +36,13 @@ def listar(
 @router.get("/{cliente_id}", response_model=ClienteRead)
 def obtener(cliente_id: int, uow: UowDep) -> ClienteRead:
     return ClienteService(uow).obtener(cliente_id)
+
+
+@router.get("/{cliente_id}/cuotas", response_model=CuotasClienteRead)
+def cuotas(cliente_id: int, uow: UowDep) -> CuotasClienteRead:
+    """Saldo, mora y plan de cuotas de cada venta en cuotas del cliente."""
+    ClienteService(uow).obtener(cliente_id)
+    return CobroService(uow).de_cliente(cliente_id)
 
 
 @router.post("", response_model=ClienteRead, status_code=status.HTTP_201_CREATED)

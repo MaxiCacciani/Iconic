@@ -1,4 +1,4 @@
-import { pedir, type Schemas } from "@/shared/api"
+import { pedir, pedirArchivo, type Schemas } from "@/shared/api"
 
 /** El Vendedor recibe la venta y la cotización sin costos, ganancia ni "bajo costo". */
 export type Venta = Schemas["VentaReadAdmin"] | Schemas["VentaReadVendedor"]
@@ -40,4 +40,5 @@ export const ventasApi = {
       body: { comision_usd: comision },
     }),
   eliminar: (id: number) => pedir<null>(`/ventas/${id}`, { method: "DELETE" }),
+  comprobante: (id: number) => pedirArchivo(`/ventas/${id}/comprobante`),
 }

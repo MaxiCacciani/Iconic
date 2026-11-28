@@ -5,7 +5,7 @@ comisión ni la advertencia de "bajo costo". El Administrador recibe `…Admin`,
 suma esos datos.
 """
 
-from datetime import datetime
+from datetime import date, datetime
 from decimal import Decimal
 from typing import Annotated
 
@@ -14,6 +14,7 @@ from pydantic import AfterValidator, BaseModel, Field
 from app.common.base import Pagina
 from app.common.enums import Condicion, Modalidad
 from app.common.tipos import IMEI, USD, PrecioUSD
+from app.modules.cobros.schemas import CuotaRead
 from app.modules.productos.schemas import Bateria, Cantidad, Controles, Extras, Referencia
 from app.modules.vendedores.schemas import VendedorRead
 
@@ -42,6 +43,12 @@ class CotizacionCreate(BaseModel):
     items: Annotated[list[ItemVentaCreate], AfterValidator(_con_items)]
     modalidad: Modalidad = Modalidad.contado
     canje_valor_usd: PrecioUSD | None = None
+    # Solo en cuotas; al contado se ignoran.
+    cantidad_cuotas: Annotated[int, Field(ge=2, le=60)] | None = None
+    anticipo_usd: USD = Decimal(0)
+    primera_cuota_hoy: bool = Field(
+        default=False, description="La cuota 1 vence hoy y queda cobrada al registrar."
+    )
     comision_usd: USD = Field(
         default=Decimal(0), description="Solo del Administrador: la de un Vendedor se ignora."
     )
@@ -77,14 +84,28 @@ class VentaCreate(CotizacionCreate):
 
 
 # ─── Cotización ──────────────────────────────────────────────────────────────
+class CuotaCotizada(BaseModel):
+    numero: int
+    vencimiento: date
+    monto_usd: Decimal
+    cobrada: bool
+
+
 class CotizacionVendedor(BaseModel):
     """Los montos en pesos son con el TC de hoy: `null` si no se cargó."""
 
     total_usd: Decimal
     total_ars: Decimal | None
     canje_usd: Decimal
-    saldo_usd: Decimal = Field(description="Lo que queda por pagar: total − canje.")
+    anticipo_usd: Decimal
+    saldo_usd: Decimal = Field(
+        description="Total − canje − anticipo: al contado, lo que se paga; en cuotas, lo "
+        "que se financia."
+    )
     saldo_ars: Decimal | None
+    cuotas: list[CuotaCotizada] = Field(
+        description="Vacía al contado. La última ajusta el redondeo."
+    )
 
 
 class CotizacionAdmin(CotizacionVendedor):
@@ -133,14 +154,17 @@ class VentaReadVendedor(BaseModel):
     vendedor: VendedorRead | None
     metodo_pago: Referencia
     modalidad: Modalidad
+    cantidad_cuotas: int | None
     tc_ars: Decimal
     garantia_meses: int
     items: list[ItemVentaVendedor]
     canje: CanjeRead | None
     total_usd: Decimal
     total_ars: Decimal
-    saldo_usd: Decimal
+    anticipo_usd: Decimal
+    saldo_usd: Decimal = Field(description="Total − canje − anticipo.")
     saldo_ars: Decimal
+    cuotas: list[CuotaRead]
 
 
 class VentaReadAdmin(VentaReadVendedor):
