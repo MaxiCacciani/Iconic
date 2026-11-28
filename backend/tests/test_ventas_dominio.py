@@ -1,6 +1,7 @@
 """Funciones puras de ventas, la Strategy `Contado` y el stock al vender y devolver."""
 
 from dataclasses import dataclass
+from datetime import date
 from decimal import Decimal
 
 import pytest
@@ -10,7 +11,7 @@ from app.core.excepciones import ErrorDeCampo, TransicionInvalida
 from app.modules.catalogos.models import Categoria, Modelo, TipoCategoria
 from app.modules.productos.models import Producto
 from app.modules.ventas import dominio
-from app.modules.ventas.modalidades import Contado, modalidad_de
+from app.modules.ventas.modalidades import Contado, EnCuotas, Pago, Plan, modalidad_de
 
 
 @dataclass
@@ -43,17 +44,21 @@ def test_bajo_costo():
 
 
 def test_contado_el_canje_no_cubre_el_total():
-    Contado().validar(D(1000), D(0))
-    Contado().validar(D(1000), D("999.99"))
+    hoy = date(2026, 11, 28)
+    assert Contado().planear(D(1000), D("999.99"), Pago(), hoy) == Plan()
     with pytest.raises(ErrorDeCampo) as e:
-        Contado().validar(D(1000), D(1000))
+        Contado().planear(D(1000), D(1000), Pago(), hoy)
     assert e.value.campo == "canje_valor_usd"
 
 
-def test_cuotas_todavia_no():
+def test_contado_ignora_anticipo_y_cuotas():
+    plan = Contado().planear(D(1000), D(0), Pago(D(100), 6, True), date(2026, 11, 28))
+    assert plan == Plan()
+
+
+def test_cada_modalidad_tiene_su_estrategia():
     assert isinstance(modalidad_de(Modalidad.contado), Contado)
-    with pytest.raises(ErrorDeCampo):
-        modalidad_de(Modalidad.cuotas)
+    assert isinstance(modalidad_de(Modalidad.cuotas), EnCuotas)
 
 
 def _producto(cantidad=1, por_cantidad=False) -> Producto:

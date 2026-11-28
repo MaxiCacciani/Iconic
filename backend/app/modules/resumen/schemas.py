@@ -1,7 +1,7 @@
 """DTOs de salida del resumen (por rol).
 
-Por ahora Admin y Vendedor reciben lo mismo. Cuando se sumen indicadores con costos o
-ganancias, se separan en `ResumenReadVendedor` y `ResumenReadAdmin`.
+Los cobros (los del mes y el aviso de cuotas vencidas) son solo del Administrador: al
+Vendedor le llega `cobros_del_mes` en `null`.
 """
 
 from datetime import date
@@ -10,11 +10,14 @@ from enum import StrEnum
 
 from pydantic import BaseModel, Field
 
+from app.modules.cobros.schemas import TotalesCobros
+
 
 class TipoAviso(StrEnum):
     """Qué avisa. El front lo usa para saber qué acción ofrecer junto al mensaje."""
 
     tc_sin_cargar = "tc_sin_cargar"
+    cuotas_vencidas = "cuotas_vencidas"
 
 
 class AvisoRead(BaseModel):
@@ -50,3 +53,6 @@ class ResumenRead(BaseModel):
     avisos: list[AvisoRead]
     stock: StockRead
     ventas: VentasRead
+    cobros_del_mes: TotalesCobros | None = Field(
+        description="Las cuotas que vencen este mes. Solo para el Administrador."
+    )

@@ -20,6 +20,11 @@ export type Borrador = {
   lineas: Linea[]
   ultimaClave: number
   cliente: Cliente | null
+  modalidad: "contado" | "cuotas"
+  /** Solo en cuotas. */
+  cantidadCuotas: string
+  anticipo: string
+  primeraCuotaHoy: boolean
   /** Vacío: el método de pago predeterminado del catálogo. */
   metodoPagoId: string
   conCanje: boolean
@@ -35,6 +40,10 @@ export const BORRADOR_VACIO: Borrador = {
   lineas: [],
   ultimaClave: 0,
   cliente: null,
+  modalidad: "contado",
+  cantidadCuotas: "",
+  anticipo: "",
+  primeraCuotaHoy: false,
   metodoPagoId: "",
   conCanje: false,
   canjeValor: "",

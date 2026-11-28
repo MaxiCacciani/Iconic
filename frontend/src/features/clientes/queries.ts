@@ -17,6 +17,7 @@ export const clientesKeys = {
   buscador: (texto: string) =>
     [...clientesKeys.todo, "buscador", texto] as const,
   ficha: (id: number) => [...clientesKeys.todo, "ficha", id] as const,
+  cuotas: (id: number) => [...clientesKeys.todo, "cuotas", id] as const,
 }
 
 export function useClientesQuery(filtros: FiltrosClientes) {
@@ -46,6 +47,15 @@ export function useClienteQuery(id: number) {
   return useQuery({
     queryKey: clientesKeys.ficha(id),
     queryFn: ({ signal }) => clientesApi.obtener(id, signal),
+    enabled: Number.isInteger(id) && id > 0,
+  })
+}
+
+/** Saldo, mora y plan de cuotas: la API los calcula desde los cobros. */
+export function useCuotasClienteQuery(id: number) {
+  return useQuery({
+    queryKey: clientesKeys.cuotas(id),
+    queryFn: ({ signal }) => clientesApi.cuotas(id, signal),
     enabled: Number.isInteger(id) && id > 0,
   })
 }

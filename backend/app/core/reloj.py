@@ -15,3 +15,10 @@ def inicio_del_dia(dia: date) -> datetime:
     """La medianoche de ese día en Argentina, en UTC (como se guardan los instantes)."""
     zona = ZoneInfo(get_settings().zona_horaria)
     return datetime.combine(dia, time.min, tzinfo=zona).astimezone(UTC)
+
+
+def dia_de(instante: datetime) -> date:
+    """El día en Argentina de un instante. Sin zona (SQLite la pierde), está en UTC."""
+    if instante.tzinfo is None:
+        instante = instante.replace(tzinfo=UTC)
+    return instante.astimezone(ZoneInfo(get_settings().zona_horaria)).date()

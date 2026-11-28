@@ -41,7 +41,15 @@ const PASOS = [
 function pasoDe(campo: string): number {
   if (campo.startsWith("items")) return 0
   if (campo === "cliente_id") return 1
-  if (campo === "modalidad") return 2
+  if (
+    [
+      "modalidad",
+      "cantidad_cuotas",
+      "anticipo_usd",
+      "primera_cuota_hoy",
+    ].includes(campo)
+  )
+    return 2
   if (campo.startsWith("canje") || campo === "metodo_pago_id") return 3
   return 4
 }
@@ -75,7 +83,13 @@ export function NuevaVentaPage() {
       precio_usd: l.esRegalo ? "0" : l.precio,
       es_regalo: l.esRegalo,
     })),
-    modalidad: "contado",
+    modalidad: b.modalidad,
+    ...(b.modalidad === "cuotas" && {
+      cantidad_cuotas: limpio(b.cantidadCuotas),
+      // Vacío no se manda: sin anticipo.
+      anticipo_usd: limpio(b.anticipo) ?? undefined,
+      primera_cuota_hoy: b.primeraCuotaHoy,
+    }),
     canje_valor_usd: b.conCanje ? limpio(b.canjeValor) : null,
     // La comisión entra en la ganancia de la cotización; el Vendedor no la manda.
     ...(puede("ver_costos") &&

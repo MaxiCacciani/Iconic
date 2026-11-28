@@ -560,6 +560,26 @@ export interface paths {
     patch: operations["actualizar_clientes__cliente_id__patch"]
     trace?: never
   }
+  "/clientes/{cliente_id}/cuotas": {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /**
+     * Cuotas
+     * @description Saldo, mora y plan de cuotas de cada venta en cuotas del cliente.
+     */
+    get: operations["cuotas_clientes__cliente_id__cuotas_get"]
+    put?: never
+    post?: never
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
   "/ventas/cotizar": {
     parameters: {
       query?: never
@@ -601,6 +621,26 @@ export interface paths {
     patch?: never
     trace?: never
   }
+  "/ventas/{venta_id}/comprobante": {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /**
+     * Comprobante
+     * @description El comprobante en PDF, sin costos. El Vendedor, solo el de sus ventas.
+     */
+    get: operations["comprobante_ventas__venta_id__comprobante_get"]
+    put?: never
+    post?: never
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
   "/ventas/{venta_id}/comision": {
     parameters: {
       query?: never
@@ -633,6 +673,43 @@ export interface paths {
      * @description Borra la venta y devuelve el stock. No se puede deshacer.
      */
     delete: operations["eliminar_ventas__venta_id__delete"]
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  "/cobros": {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /** Agenda */
+    get: operations["agenda_cobros_get"]
+    put?: never
+    post?: never
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  "/cobros/{cobro_id}/cobrar": {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /**
+     * Cobrar
+     * @description Una cuota ya cobrada da 409.
+     */
+    post: operations["cobrar_cobros__cobro_id__cobrar_post"]
+    delete?: never
     options?: never
     head?: never
     patch?: never
@@ -809,6 +886,27 @@ export type webhooks = Record<string, never>
 export interface components {
   schemas: {
     /**
+     * AgendaRead
+     * @description Las cuotas que vencen en el mes, por fecha.
+     */
+    AgendaRead: {
+      /** Total Usd */
+      total_usd: string
+      /** Cobrado Usd */
+      cobrado_usd: string
+      /**
+       * Pendiente Usd
+       * @description Lo no cobrado, vencido o no.
+       */
+      pendiente_usd: string
+      /** Anio */
+      anio: number
+      /** Mes */
+      mes: number
+      /** Cobros */
+      cobros: components["schemas"]["CobroAgendaRead"][]
+    }
+    /**
      * AsignacionesUpdate
      * @description Cada lista reemplaza la que el modelo tenía; vacía, vuelve a ofrecer todos.
      *     La que no se manda queda como estaba. Se guardan las dos juntas o ninguna.
@@ -932,6 +1030,31 @@ export interface components {
       /** Localidad Id */
       localidad_id?: number | null
     }
+    /** CobroAgendaRead */
+    CobroAgendaRead: {
+      /** Id */
+      id: number
+      /** Numero */
+      numero: number
+      /**
+       * Vencimiento
+       * Format: date
+       */
+      vencimiento: string
+      /** Monto Usd */
+      monto_usd: string
+      estado: components["schemas"]["EstadoCuota"]
+      /** Venta Id */
+      venta_id: number
+      /** Cantidad Cuotas */
+      cantidad_cuotas: number
+      cliente: components["schemas"]["Referencia"]
+      /**
+       * Monto Ars
+       * @description Con el TC de hoy; `null` sin TC.
+       */
+      monto_ars: string | null
+    }
     /** ComisionUpdate */
     ComisionUpdate: {
       /** Comision Usd */
@@ -950,13 +1073,20 @@ export interface components {
       total_ars: string | null
       /** Canje Usd */
       canje_usd: string
+      /** Anticipo Usd */
+      anticipo_usd: string
       /**
        * Saldo Usd
-       * @description Lo que queda por pagar: total − canje.
+       * @description Total − canje − anticipo: al contado, lo que se paga; en cuotas, lo que se financia.
        */
       saldo_usd: string
       /** Saldo Ars */
       saldo_ars: string | null
+      /**
+       * Cuotas
+       * @description Vacía al contado. La última ajusta el redondeo.
+       */
+      cuotas: components["schemas"]["CuotaCotizada"][]
       /** Costo Usd */
       costo_usd: string | null
       /**
@@ -984,6 +1114,19 @@ export interface components {
       modalidad: components["schemas"]["Modalidad"]
       /** Canje Valor Usd */
       canje_valor_usd?: (number | string) | null
+      /** Cantidad Cuotas */
+      cantidad_cuotas?: number | null
+      /**
+       * Anticipo Usd
+       * @default 0
+       */
+      anticipo_usd: number | string
+      /**
+       * Primera Cuota Hoy
+       * @description La cuota 1 vence hoy y queda cobrada al registrar.
+       * @default false
+       */
+      primera_cuota_hoy: boolean
       /**
        * Comision Usd
        * @description Solo del Administrador: la de un Vendedor se ignora.
@@ -1002,13 +1145,67 @@ export interface components {
       total_ars: string | null
       /** Canje Usd */
       canje_usd: string
+      /** Anticipo Usd */
+      anticipo_usd: string
       /**
        * Saldo Usd
-       * @description Lo que queda por pagar: total − canje.
+       * @description Total − canje − anticipo: al contado, lo que se paga; en cuotas, lo que se financia.
        */
       saldo_usd: string
       /** Saldo Ars */
       saldo_ars: string | null
+      /**
+       * Cuotas
+       * @description Vacía al contado. La última ajusta el redondeo.
+       */
+      cuotas: components["schemas"]["CuotaCotizada"][]
+    }
+    /** CuotaCotizada */
+    CuotaCotizada: {
+      /** Numero */
+      numero: number
+      /**
+       * Vencimiento
+       * Format: date
+       */
+      vencimiento: string
+      /** Monto Usd */
+      monto_usd: string
+      /** Cobrada */
+      cobrada: boolean
+    }
+    /** CuotaRead */
+    CuotaRead: {
+      /** Id */
+      id: number
+      /** Numero */
+      numero: number
+      /**
+       * Vencimiento
+       * Format: date
+       */
+      vencimiento: string
+      /** Monto Usd */
+      monto_usd: string
+      estado: components["schemas"]["EstadoCuota"]
+    }
+    /**
+     * CuotasClienteRead
+     * @description Reglas 3: el saldo es la suma de las cuotas sin cobrar y "en mora" es tener al
+     *     menos una vencida. Las ventas más nuevas primero.
+     */
+    CuotasClienteRead: {
+      /** Saldo Usd */
+      saldo_usd: string
+      /**
+       * Saldo Ars
+       * @description Con el TC de hoy; `null` sin TC.
+       */
+      saldo_ars: string | null
+      /** En Mora */
+      en_mora: boolean
+      /** Planes */
+      planes: components["schemas"]["PlanCuotasRead"][]
     }
     /** DefectoCreate */
     DefectoCreate: {
@@ -1053,6 +1250,12 @@ export interface components {
        */
       cantidad: number
     }
+    /**
+     * EstadoCuota
+     * @description Lo que se muestra: el guardado más `vencida`.
+     * @enum {string}
+     */
+    EstadoCuota: "pendiente" | "vencida" | "cobrada"
     /**
      * EstadoProductoEnum
      * @enum {string}
@@ -1412,6 +1615,31 @@ export interface components {
       /** Tamanio */
       tamanio: number
     }
+    /** PlanCuotasRead */
+    PlanCuotasRead: {
+      /** Venta Id */
+      venta_id: number
+      /**
+       * Fecha
+       * Format: date-time
+       */
+      fecha: string
+      /** Cantidad Cuotas */
+      cantidad_cuotas: number
+      /** Pagadas */
+      pagadas: number
+      /** Saldo Usd */
+      saldo_usd: string
+      /** @description La primera sin cobrar. */
+      proxima: components["schemas"]["CuotaRead"] | null
+      /**
+       * En Mora Desde
+       * @description El vencimiento de la primera vencida.
+       */
+      en_mora_desde: string | null
+      /** Cuotas */
+      cuotas: components["schemas"]["CuotaRead"][]
+    }
     /**
      * ProductoCreate
      * @description Qué datos lleva depende del tipo de la categoría del modelo: IMEI y batería, controles
@@ -1635,6 +1863,8 @@ export interface components {
       avisos: components["schemas"]["AvisoRead"][]
       stock: components["schemas"]["StockRead"]
       ventas: components["schemas"]["VentasRead"]
+      /** @description Las cuotas que vencen este mes. Solo para el Administrador. */
+      cobros_del_mes: components["schemas"]["TotalesCobros"] | null
     }
     /**
      * Rol
@@ -1668,7 +1898,7 @@ export interface components {
      * @description Qué avisa. El front lo usa para saber qué acción ofrecer junto al mensaje.
      * @enum {string}
      */
-    TipoAviso: "tc_sin_cargar"
+    TipoAviso: "tc_sin_cargar" | "cuotas_vencidas"
     /**
      * TipoCambioHoyRead
      * @description TC de hoy. `valor_ars` es `null` mientras no se haya cargado: no hay valor por defecto.
@@ -1754,6 +1984,18 @@ export interface components {
        * @default bearer
        */
       token_type: string
+    }
+    /** TotalesCobros */
+    TotalesCobros: {
+      /** Total Usd */
+      total_usd: string
+      /** Cobrado Usd */
+      cobrado_usd: string
+      /**
+       * Pendiente Usd
+       * @description Lo no cobrado, vencido o no.
+       */
+      pendiente_usd: string
     }
     /** UsuarioCreate */
     UsuarioCreate: {
@@ -1852,6 +2094,19 @@ export interface components {
       modalidad: components["schemas"]["Modalidad"]
       /** Canje Valor Usd */
       canje_valor_usd?: (number | string) | null
+      /** Cantidad Cuotas */
+      cantidad_cuotas?: number | null
+      /**
+       * Anticipo Usd
+       * @default 0
+       */
+      anticipo_usd: number | string
+      /**
+       * Primera Cuota Hoy
+       * @description La cuota 1 vence hoy y queda cobrada al registrar.
+       * @default false
+       */
+      primera_cuota_hoy: boolean
       /**
        * Comision Usd
        * @description Solo del Administrador: la de un Vendedor se ignora.
@@ -1885,6 +2140,8 @@ export interface components {
       vendedor: components["schemas"]["VendedorRead"] | null
       metodo_pago: components["schemas"]["Referencia"]
       modalidad: components["schemas"]["Modalidad"]
+      /** Cantidad Cuotas */
+      cantidad_cuotas: number | null
       /** Tc Ars */
       tc_ars: string
       /** Garantia Meses */
@@ -1896,10 +2153,17 @@ export interface components {
       total_usd: string
       /** Total Ars */
       total_ars: string
-      /** Saldo Usd */
+      /** Anticipo Usd */
+      anticipo_usd: string
+      /**
+       * Saldo Usd
+       * @description Total − canje − anticipo.
+       */
       saldo_usd: string
       /** Saldo Ars */
       saldo_ars: string
+      /** Cuotas */
+      cuotas: components["schemas"]["CuotaRead"][]
       /** Comision Usd */
       comision_usd: string
       /** Costo Usd */
@@ -1929,6 +2193,8 @@ export interface components {
       vendedor: components["schemas"]["VendedorRead"] | null
       metodo_pago: components["schemas"]["Referencia"]
       modalidad: components["schemas"]["Modalidad"]
+      /** Cantidad Cuotas */
+      cantidad_cuotas: number | null
       /** Tc Ars */
       tc_ars: string
       /** Garantia Meses */
@@ -1940,10 +2206,17 @@ export interface components {
       total_usd: string
       /** Total Ars */
       total_ars: string
-      /** Saldo Usd */
+      /** Anticipo Usd */
+      anticipo_usd: string
+      /**
+       * Saldo Usd
+       * @description Total − canje − anticipo.
+       */
       saldo_usd: string
       /** Saldo Ars */
       saldo_ars: string
+      /** Cuotas */
+      cuotas: components["schemas"]["CuotaRead"][]
     }
     /**
      * VentasDelPeriodo
@@ -3906,6 +4179,37 @@ export interface operations {
       }
     }
   }
+  cuotas_clientes__cliente_id__cuotas_get: {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        cliente_id: number
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          "application/json": components["schemas"]["CuotasClienteRead"]
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"]
+        }
+      }
+    }
+  }
   cotizar_ventas_cotizar_post: {
     parameters: {
       query?: never
@@ -4010,6 +4314,37 @@ export interface operations {
       }
     }
   }
+  comprobante_ventas__venta_id__comprobante_get: {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        venta_id: number
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          "application/pdf": unknown
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"]
+        }
+      }
+    }
+  }
   cambiar_comision_ventas__venta_id__comision_patch: {
     parameters: {
       query?: never
@@ -4069,6 +4404,70 @@ export interface operations {
           [name: string]: unknown
         }
         content?: never
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"]
+        }
+      }
+    }
+  }
+  agenda_cobros_get: {
+    parameters: {
+      query?: {
+        anio?: number | null
+        /** @description Sin mes, el actual. */
+        mes?: number | null
+      }
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          "application/json": components["schemas"]["AgendaRead"]
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"]
+        }
+      }
+    }
+  }
+  cobrar_cobros__cobro_id__cobrar_post: {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        cobro_id: number
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          "application/json": components["schemas"]["CobroAgendaRead"]
+        }
       }
       /** @description Validation Error */
       422: {

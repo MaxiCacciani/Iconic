@@ -1,4 +1,10 @@
-import { ArrowClockwiseIcon, InfoIcon } from "@phosphor-icons/react"
+import {
+  ArrowClockwiseIcon,
+  ArrowRightIcon,
+  InfoIcon,
+  WarningIcon,
+} from "@phosphor-icons/react"
+import { Link } from "react-router"
 
 import { AvisoTipoCambio, TarjetaTipoCambio } from "@/features/tipo-cambio"
 import { mensajeDeError } from "@/shared/api"
@@ -8,6 +14,7 @@ import { Button } from "@/shared/ui/button"
 import { EncabezadoPagina } from "@/shared/ui/encabezado-pagina"
 import { Skeleton } from "@/shared/ui/skeleton"
 
+import { TarjetaCobros } from "../components/TarjetaCobros"
 import { TarjetaStock } from "../components/TarjetaStock"
 import { TarjetaVentas } from "../components/TarjetaVentas"
 import { useRefrescarResumen, useResumen } from "../queries"
@@ -56,6 +63,19 @@ export function ResumenPage() {
                 mensaje={aviso.mensaje}
                 onCargado={refrescar}
               />
+            ) : aviso.tipo === "cuotas_vencidas" ? (
+              <Alert key={aviso.tipo} variant="destructive">
+                <WarningIcon aria-hidden />
+                <AlertTitle>{aviso.mensaje}</AlertTitle>
+                <AlertDescription>
+                  <Button variant="outline" size="sm" asChild>
+                    <Link to="/cobros">
+                      Ver agenda
+                      <ArrowRightIcon />
+                    </Link>
+                  </Button>
+                </AlertDescription>
+              </Alert>
             ) : (
               <Alert key={aviso.tipo}>
                 <InfoIcon aria-hidden />
@@ -67,6 +87,9 @@ export function ResumenPage() {
             <TarjetaTipoCambio onCargado={refrescar} />
           )}
           <TarjetaVentas ventas={resumen.data.ventas} />
+          {resumen.data.cobros_del_mes && (
+            <TarjetaCobros cobros={resumen.data.cobros_del_mes} />
+          )}
           <TarjetaStock stock={resumen.data.stock} />
         </div>
       )}

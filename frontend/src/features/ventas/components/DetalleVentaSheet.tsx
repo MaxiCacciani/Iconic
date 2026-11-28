@@ -1,4 +1,4 @@
-import { TrashIcon, WarningIcon } from "@phosphor-icons/react"
+import { FilePdfIcon, TrashIcon, WarningIcon } from "@phosphor-icons/react"
 import { useState, type FormEvent, type ReactNode } from "react"
 import { Link } from "react-router"
 import { toast } from "sonner"
@@ -7,10 +7,12 @@ import { ApiError, mensajeDeError } from "@/shared/api"
 import {
   formatearARS,
   formatearDiaDe,
+  formatearFecha,
   formatearUSD,
 } from "@/shared/lib/formato"
 import { Badge } from "@/shared/ui/badge"
 import { Button } from "@/shared/ui/button"
+import { EstadoCuota } from "@/shared/ui/estado-cuota"
 import { Field, FieldError, FieldLabel } from "@/shared/ui/field"
 import { InputUSD } from "@/shared/ui/input-usd"
 import { Separator } from "@/shared/ui/separator"
@@ -25,7 +27,7 @@ import {
 import { Spinner } from "@/shared/ui/spinner"
 
 import { esAdmin, type Venta, type VentaAdmin } from "../api"
-import { useCambiarComision } from "../queries"
+import { useCambiarComision, useDescargarComprobante } from "../queries"
 import { MODALIDAD, nombreProducto } from "./etiquetas"
 
 type Props = {
@@ -88,7 +90,10 @@ function Detalle({
             </Link>
           </Dato>
           <Dato termino="Pago">
-            {MODALIDAD[v.modalidad]} · {v.metodo_pago.nombre}
+            {v.cantidad_cuotas
+              ? `${v.cantidad_cuotas} cuotas`
+              : MODALIDAD[v.modalidad]}{" "}
+            · {v.metodo_pago.nombre}
           </Dato>
           <Dato termino="Vendedor">
             {v.vendedor ? (
@@ -181,8 +186,11 @@ function Detalle({
           {v.canje && (
             <Fila etiqueta="Canje">− {formatearUSD(v.canje.valor_usd)}</Fila>
           )}
+          {Number(v.anticipo_usd) > 0 && (
+            <Fila etiqueta="Anticipo">− {formatearUSD(v.anticipo_usd)}</Fila>
+          )}
           <Separator />
-          <Fila etiqueta="Saldo">
+          <Fila etiqueta={v.cuotas.length > 0 ? "A financiar" : "Saldo"}>
             <span className="font-medium">
               {formatearUSD(v.saldo_usd)} · {formatearARS(v.saldo_ars)}
             </span>
@@ -211,20 +219,64 @@ function Detalle({
           )}
         </section>
 
+        {v.cuotas.length > 0 && (
+          <section className="flex flex-col gap-2">
+            <h3 className="font-medium">Cuotas</h3>
+            <ol className="flex flex-col divide-y rounded-lg border tabular-nums">
+              {v.cuotas.map((c) => (
+                <li
+                  key={c.id}
+                  className="flex items-center justify-between gap-4 px-3 py-2"
+                >
+                  <span>
+                    {c.numero} de {v.cuotas.length}
+                    <span className="block text-xs text-muted-foreground">
+                      {formatearFecha(c.vencimiento)}
+                    </span>
+                  </span>
+                  <span className="flex items-center gap-3">
+                    <EstadoCuota estado={c.estado} />
+                    {formatearUSD(c.monto_usd)}
+                  </span>
+                </li>
+              ))}
+            </ol>
+          </section>
+        )}
+
         {esAdmin(v) && (
           <Comision key={v.id} venta={v} onGuardada={onActualizada} />
         )}
       </div>
 
-      {onBorrar && (
-        <SheetFooter>
+      <SheetFooter>
+        <DescargarComprobante ventaId={v.id} />
+        {onBorrar && (
           <Button variant="destructive" onClick={() => onBorrar(v)}>
             <TrashIcon />
             Borrar venta
           </Button>
-        </SheetFooter>
-      )}
+        )}
+      </SheetFooter>
     </>
+  )
+}
+
+function DescargarComprobante({ ventaId }: { ventaId: number }) {
+  const descargar = useDescargarComprobante()
+  return (
+    <Button
+      variant="outline"
+      disabled={descargar.isPending}
+      onClick={() =>
+        descargar.mutate(ventaId, {
+          onError: (error) => toast.error(mensajeDeError(error)),
+        })
+      }
+    >
+      {descargar.isPending ? <Spinner /> : <FilePdfIcon />}
+      Descargar comprobante
+    </Button>
   )
 }
 
