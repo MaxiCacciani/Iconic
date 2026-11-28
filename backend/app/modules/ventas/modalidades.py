@@ -73,7 +73,8 @@ class EnCuotas(ModalidadPago):
         if min(c.monto for c in cuotas) < 1:
             raise ErrorDeCampo(
                 "cantidad_cuotas",
-                f"No alcanza para {cantidad_cuotas} cuotas de al menos US$ 1.",
+                f"Con {cantidad_cuotas} cuotas, alguna queda en menos de US$ 1 (la última "
+                "ajusta el redondeo): probá con menos cuotas.",
             )
         return Plan(anticipo=anticipo, cantidad_cuotas=cantidad_cuotas, cuotas=cuotas)
 
